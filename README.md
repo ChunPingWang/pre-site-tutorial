@@ -908,6 +908,71 @@ print(f'{sum(1 for x in t if x[\"health\"]==\"up\")}/{len(t)} petclinic targets 
 # 預期輸出: 8/8 petclinic targets up
 ```
 
+### 7.7 v2.3 Sealed Secrets：消除 Git 明文密碼
+
+`manifests/pre-sit/05-config.yaml` 和 `manifests/sit/05-config.yaml` 原先直接包含明文 `POSTGRES_PASSWORD`。v2.3 改用 Bitnami Sealed Secrets，讓密碼以非對稱加密後的密文存入 Git，只有 cluster 內的 controller 能解封。
+
+#### 元件
+
+| 元件 | 用途 |
+|------|------|
+| `sealed-secrets-controller` | kube-system namespace，持有私鑰，負責解封 SealedSecret → Secret |
+| `kubeseal` CLI | 用 controller 公鑰把明文 Secret 加密成 SealedSecret |
+
+#### 一鍵安裝
+
+```bash
+bash scripts/setup-sealed-secrets.sh
+```
+
+或手動：
+
+```bash
+# 安裝 controller
+helm upgrade --install sealed-secrets sealed-secrets/sealed-secrets \
+  --namespace kube-system --values manifests/sealed-secrets/values.yaml --wait
+
+# 套用 SealedSecrets（ArgoCD 管理 sit；pre-sit 手動 apply）
+kubectl apply -f manifests/pre-sit/06-sealed-db-credentials.yaml
+# sit 由 ArgoCD petclinic-sit 自動 sync（kustomization 已含此檔）
+```
+
+> **kubeseal 安裝**（若尚未安裝）：
+> ```bash
+> KUBESEAL_VERSION=0.36.6
+> curl -sL "https://github.com/bitnami-labs/sealed-secrets/releases/download/v${KUBESEAL_VERSION}/kubeseal-${KUBESEAL_VERSION}-linux-amd64.tar.gz" \
+>   | tar -xz kubeseal && install -m 755 kubeseal ~/.local/bin/kubeseal
+> ```
+
+#### 封存新 Secret
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+
+kubectl create secret generic my-secret -n pre-sit \
+  --from-literal=KEY=VALUE \
+  --dry-run=client -o yaml \
+  | kubeseal \
+      --controller-name=sealed-secrets-controller \
+      --controller-namespace=kube-system \
+      --format yaml > manifests/pre-sit/06-my-secret.yaml
+
+# 把輸出的 SealedSecret 加入 git — 明文不會進 repo
+```
+
+#### 驗收
+
+```bash
+# SealedSecrets 狀態
+kubectl get sealedsecret -A
+# 預期: pre-sit 和 sit 各一個，SYNCED=True
+
+# 解封後的 Secret 值確認
+kubectl get secret petclinic-db-credentials -n pre-sit \
+  -o jsonpath='{.data.POSTGRES_USER}' | base64 -d
+# 預期: petclinic
+```
+
 ---
 
 ## 8. 目錄結構說明
@@ -935,7 +1000,10 @@ pre-site-tutorial/
 │   ├── pre-sit/
 │   │   ├── 25-presit-sa.yaml              ⭐ BDD runner SA/Role/RoleBinding（一次性 setup）
 │   │   └── 30-bdd-jobs.yaml               4 Phase Jobs + PVC（Jenkins 每次 apply）
+│   ├── sealed-secrets/
+│   │   └── values.yaml                    Sealed Secrets controller Helm values
 │   └── sit/                               SIT namespace manifests（ArgoCD 管理）
+│       └── 06-sealed-db-credentials.yaml  ⭐ SIT DB 密碼 SealedSecret（已加入 kustomization）
 │
 └── presit-bdd-demo/                       v2.0 原始 demo 與 v2.1 PoC
     ├── features/                          v2.0 demo: Gherkin
@@ -1016,6 +1084,7 @@ mvn test -Dcucumber.filter.tags="@critical and not @known-issue"
 | ArgoCD 接真正的 Git | `argocd/petclinic-pre-sit.yaml` 改 `repoURL` |
 | CI/CD 整合（已實作 v2.3） | Jenkins 部署在 Kind 內；`manifests/jenkins/` + `Jenkinsfile` 已就緒，見 [§7.5](#75-v23-stage-cjenkins-cicd-自動化-在-kind-內) |
 | 觀測性（已實作 v2.3） | Prometheus + Grafana + Loki 已部署；`manifests/monitoring/` + `scripts/setup-monitoring.sh`，見 [§7.6](#76-v23-observabilityprometheus--grafana--loki) |
+| 明文密碼消除（已實作 v2.3） | Sealed Secrets controller 替換明文 Secret；`manifests/sealed-secrets/` + `06-sealed-db-credentials.yaml`，見 [§7.7](#77-v23-sealed-secrets消除-git-明文密碼) |
 
 ---
 
