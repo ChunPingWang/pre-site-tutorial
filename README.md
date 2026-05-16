@@ -17,6 +17,13 @@
 5. [BDD 框架類別圖](#5-bdd-框架類別圖)
 6. [完整文件導覽](#6-完整文件導覽)
 7. [Quick Start（從零跑起 PoC）](#7-quick-start從零跑起-poc)
+   - [7.1 先決條件](#71-先決條件)
+   - [7.2 五個指令跑完整 PoC（v2.1）](#72-五個指令跑完整-poc)
+   - [7.5 v2.3 Jenkins CI/CD](#75-v23-stage-cjenkins-cicd-自動化-在-kind-內)
+   - [7.6 v2.3 Observability](#76-v23-observabilityprometheus--grafana--loki)
+   - [7.7 v2.3 Sealed Secrets](#77-v23-sealed-secrets消除-git-明文密碼)
+   - [7.8 v2.3 Per-user SIT Namespace](#78-v23-per-user-sit-namespace每位測試人員獨立沙盒)
+   - [7.9 v2.3 完整環境 Quick Start ⭐](#79-v23-完整環境-quick-start)
 8. [目錄結構說明](#8-目錄結構說明)
 9. [常見問題（FAQ）](#9-常見問題faq)
 10. [延伸學習路徑](#10-延伸學習路徑)
@@ -723,11 +730,23 @@ graph LR
 | kubectl | 1.28+ | K8s CLI |
 | Java | 17+ | BDD 編譯 |
 | Maven | 3.9+ | 依賴管理 |
-| Helm | (optional) | ArgoCD 替代安裝法 |
+| Helm | 3.x | Monitoring / Sealed Secrets 安裝（v2.3 必要） |
+| kubeseal | 0.36+ | Sealed Secrets 加密 CLI（v2.3 必要） |
+| envsubst | gettext | Per-user namespace 模板展開（v2.3 必要） |
 
 驗證：
 ```bash
-for c in docker kind kubectl java mvn; do printf "%-10s " $c; $c --version 2>&1 | head -1; done
+for c in docker kind kubectl java mvn helm kubeseal envsubst; do
+  printf "%-12s " $c; $c --version 2>&1 | head -1
+done
+```
+
+kubeseal 安裝（若尚未安裝）：
+```bash
+KUBESEAL_VERSION=0.36.6
+curl -sL "https://github.com/bitnami-labs/sealed-secrets/releases/download/v${KUBESEAL_VERSION}/kubeseal-${KUBESEAL_VERSION}-linux-amd64.tar.gz" \
+  | tar -xz kubeseal && install -m 755 kubeseal ~/.local/bin/kubeseal
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
 ### 7.2 五個指令跑完整 PoC
@@ -1059,6 +1078,109 @@ manifests/
 
 ---
 
+### 7.9 v2.3 完整環境 Quick Start
+
+v2.1/v2.2 的 §7.2「五個指令」只建立 Pre-SIT PoC。本節提供 **v2.3 全棧 Quick Start**：從 Kind 空叢集到 Jenkins + Observability + Sealed Secrets + Per-user SIT 全部就緒，一個腳本搞定。
+
+#### 一鍵全棧安裝
+
+```bash
+# clone repo（若尚未 clone）
+git clone https://github.com/ChunPingWang/pre-site-tutorial.git
+cd pre-site-tutorial
+
+# 全棧安裝（Step 1–9，含 PetClinic image build，約 10–15 分鐘）
+bash scripts/setup-v23.sh
+
+# 若 PetClinic image 已存在於 localhost:5000，跳過 build：
+bash scripts/setup-v23.sh --skip-build
+```
+
+#### 安裝順序（setup-v23.sh 內部步驟）
+
+```
+Step 1/9  Kind 叢集 + 本地 registry     presit-bdd-demo/poc/kind/up.sh（冪等）
+Step 2/9  nginx-ingress                  NodePort :30080（HTTP）/ :31485（HTTPS）
+Step 3/9  ArgoCD                         v2.13.1，等待所有 deployment Available
+Step 4/9  PetClinic image build + push   4 服務 + BDD runner，tag :v2.2
+Step 5/9  Sealed Secrets                 controller + SealedSecrets（pre-sit / sit）
+Step 6/9  pre-sit RBAC                   BDD runner SA/Role/RoleBinding（一次性）
+Step 7/9  ArgoCD Applications            app-pre-sit + app-sit + appset-sit-users
+Step 8/9  Jenkins                        2.492.3-lts，NodePort :30808
+Step 9/9  Observability                  Prometheus + Grafana(:30300) + Loki + Promtail
+```
+
+> **Kind inotify 限制**：Step 9 會自動執行
+> `docker exec presit-control-plane sysctl -w fs.inotify.max_user_instances=512 fs.inotify.max_user_watches=524288`
+> 確保 Promtail DaemonSet 不 CrashLoop。每次 Kind 叢集重啟後需重跑 Step 9 或手動執行此指令。
+
+#### 安裝後驗收
+
+```bash
+NODE_IP=$(kubectl get node -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+
+# 1. ArgoCD Applications 狀態
+kubectl get application -n argocd
+# 預期：petclinic-pre-sit (OutOfSync/Healthy)  petclinic-sit (Synced/Healthy)
+
+# 2. SIT API 可用
+curl -s -H 'Host: sit.local' http://localhost:30080/api/customer/owners | python3 -c \
+  "import sys,json; print(f'{len(json.load(sys.stdin))} owners')"
+# 預期：10 owners
+
+# 3. Jenkins 可到達
+curl -s -o /dev/null -w "%{http_code}" http://${NODE_IP}:30808
+# 預期：200 或 403
+
+# 4. Prometheus targets
+kubectl -n monitoring port-forward svc/kube-prometheus-kube-prome-prometheus 9090:9090 &
+sleep 3
+curl -s 'http://localhost:9090/api/v1/targets?state=active' | python3 -c "
+import sys,json; d=json.load(sys.stdin)
+t=[x for x in d['data']['activeTargets'] if x['labels'].get('namespace') in ('pre-sit','sit')]
+print(f'{sum(1 for x in t if x[\"health\"]==\"up\")}/{len(t)} petclinic targets up')
+"
+# 預期：8/8 petclinic targets up
+
+# 5. Sealed Secrets 解封
+kubectl get sealedsecret -A
+# 預期：pre-sit 和 sit 各一個
+```
+
+#### 存取 URL 總表
+
+| 服務 | URL | 帳密 |
+|------|-----|------|
+| SIT PetClinic UI | `http://<node-ip>:30080` (`Host: sit.local`) | — |
+| Jenkins | `http://<node-ip>:30808` | 無密碼 |
+| Grafana | `http://<node-ip>:30300` | admin / presit-admin |
+| ArgoCD UI | `kubectl -n argocd port-forward svc/argocd-server 8080:443` → https://localhost:8080 | admin / `kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' \| base64 -d` |
+
+/etc/hosts（加入後瀏覽器可直接開）：
+```bash
+echo "127.0.0.1 sit.local" | sudo tee -a /etc/hosts
+```
+
+#### 下一步
+
+```bash
+# A. 觸發第一次 Jenkins pipeline
+kubectl exec -n jenkins deploy/jenkins -- \
+  curl -s -X POST http://localhost:8080/job/petclinic-presit/build
+kubectl logs -n jenkins deploy/jenkins -f 2>/dev/null | grep "Finished\|stage\|error" | head -20
+
+# B. 建立個人 SIT namespace（GitOps 模式）
+scripts/create-sit-user.sh --gitops alice
+echo "127.0.0.1 alice-sit.local" | sudo tee -a /etc/hosts
+# 3 分鐘後 ArgoCD 自動 sync：
+kubectl get application petclinic-sit-alice -n argocd -w
+
+# C. 建立個人 SIT namespace（直接模式，不需 git push）
+scripts/create-sit-user.sh alice
+```
+
+---
+
 ## 8. 目錄結構說明
 
 ```
@@ -1111,10 +1233,11 @@ pre-site-tutorial/
 │           └── kustomization.yaml
 │
 ├── scripts/
-│   ├── setup-monitoring.sh                ⭐ 一鍵安裝 Prometheus + Grafana + Loki
-│   ├── setup-sealed-secrets.sh            ⭐ 一鍵安裝 Sealed Secrets controller
-│   ├── create-sit-user.sh                 ⭐ 建立 per-user SIT namespace
-│   └── delete-sit-user.sh                 刪除 per-user SIT namespace
+│   ├── setup-v23.sh                       ⭐ v2.3 全棧 bootstrap（Step 1–9，見 §7.9）
+│   ├── setup-monitoring.sh                一鍵安裝 Prometheus + Grafana + Loki
+│   ├── setup-sealed-secrets.sh            一鍵安裝 Sealed Secrets controller
+│   ├── create-sit-user.sh                 建立 per-user SIT namespace（直接 / GitOps）
+│   └── delete-sit-user.sh                 刪除 per-user SIT namespace（直接 / GitOps）
 │
 └── presit-bdd-demo/                       v2.0 原始 demo 與 v2.1 PoC
     ├── features/                          v2.0 demo: Gherkin
