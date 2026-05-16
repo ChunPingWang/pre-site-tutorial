@@ -111,7 +111,33 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- v2.2 Stage A.6: Spring Cloud Contract (Provider side) -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-contract-verifier</artifactId>
+            <scope>test</scope>
+        </dependency>
 	</dependencies>
+
+    <build>
+        <plugins>
+            <!-- v2.2 Stage A.6: Spring Cloud Contract Maven Plugin
+                 - 從 src/test/resources/contracts/ 讀取 contract DSL
+                 - 產生 provider-side test 驗證實際 API 符合 contract
+                 - 將 contract 打包為 WireMock stub jar (classifier=stubs)
+                 - 透過 mvn install 發布到 local registry，consumer 端可用 @AutoConfigureStubRunner 引用 -->
+            <plugin>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-contract-maven-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <baseClassForTests>org.springframework.samples.petclinic.customers.contract.ContractBaseTest</baseClassForTests>
+                    <testFramework>JUNIT5</testFramework>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
     <profiles>
         <profile>
