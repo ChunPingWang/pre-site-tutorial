@@ -1,0 +1,25 @@
+# v2.2 §3 決策 #3: Pre-SIT promote 為手動觸發（reviewer 看 BDD 報告後決定）
+# 因此 ArgoCD app-pre-sit 不設 automated sync — 由 Jenkins push manifest 變更 + 人工點 sync
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: petclinic-pre-sit
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/ChunPingWang/pre-site-tutorial.git
+    targetRevision: main
+    path: manifests/pre-sit
+    directory:
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: pre-sit
+  syncPolicy:
+    # 不設 automated -> 手動 sync
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true

@@ -1,0 +1,55 @@
+# v2.2 §3 決策 #13: SIT 用 ArgoCD AutoSync
+# - manifest 變更：3 分鐘內自動 sync (預設 polling interval)
+# - image tag 變更：搭配 Argo Image Updater (annotations 在下方)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: petclinic-sit
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # v2.2 §3 決策 #7: Promote 單位為 image tag。
+    # 從 main branch build 出 :sha-xxx，retag :sit-approved 之後 ArgoCD Image Updater
+    # 偵測到，自動 patch deployment image，觸發 rolling update。
+    argocd-image-updater.argoproj.io/image-list: |
+      customers=localhost:5000/petclinic-customers-service,
+      vets=localhost:5000/petclinic-vets-service,
+      visits=localhost:5000/petclinic-visits-service,
+      gateway=localhost:5000/petclinic-api-gateway
+    argocd-image-updater.argoproj.io/customers.update-strategy: name
+    argocd-image-updater.argoproj.io/customers.allow-tags:      regexp:^sit-approved$
+    argocd-image-updater.argoproj.io/vets.update-strategy:      name
+    argocd-image-updater.argoproj.io/vets.allow-tags:           regexp:^sit-approved$
+    argocd-image-updater.argoproj.io/visits.update-strategy:    name
+    argocd-image-updater.argoproj.io/visits.allow-tags:         regexp:^sit-approved$
+    argocd-image-updater.argoproj.io/gateway.update-strategy:   name
+    argocd-image-updater.argoproj.io/gateway.allow-tags:        regexp:^sit-approved$
+    # 寫入策略：直接改 Application source 的 helm 或 kustomize 參數
+    # 因為我們用 plain manifests，這裡用 'argocd' 寫入模式 (改 Application parameters)
+    argocd-image-updater.argoproj.io/write-back-method: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/ChunPingWang/pre-site-tutorial.git
+    targetRevision: main
+    path: manifests/sit
+    directory:
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sit
+  syncPolicy:
+    automated:
+      prune: false       # PoC：不 auto delete (避免使用者測試資料被誤刪)
+      selfHeal: true     # 手動改 K8s 物件會被 ArgoCD 拉回
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true
+  # StatefulSet.volumeClaimTemplates 一旦建立 K8s 會自動補欄位 (volumeMode 等)
+  # 且 K8s 不允許修改 volumeClaimTemplates — 永久 OutOfSync，必須 ignore
+  ignoreDifferences:
+  - group: apps
+    kind: StatefulSet
+    jsonPointers:
+    - /spec/volumeClaimTemplates
