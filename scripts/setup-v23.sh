@@ -107,16 +107,18 @@ until kubectl get application petclinic-sit -n argocd \
 done
 ok "ArgoCD Applications + ApplicationSet 套用完成"
 
-# ── Step 8: Jenkins CI/CD ───────────────────────────────────────────────────
-step "Step 8/9: Jenkins"
-kubectl apply -f "${ROOT}/manifests/jenkins/00-namespace.yaml"
-kubectl apply -f "${ROOT}/manifests/jenkins/05-rbac.yaml"
-kubectl apply -f "${ROOT}/manifests/jenkins/10-jenkins.yaml"
-kubectl apply -f "${ROOT}/manifests/jenkins/20-ingress.yaml"
-echo "  等待 Jenkins 就緒（initContainer 安裝 kubectl + plugins，約 2–3 分鐘）..."
-kubectl wait -n jenkins deployment/jenkins \
-  --for=condition=Available --timeout=300s
-ok "Jenkins 就緒（http://jenkins.local:30080）"
+# ── Step 8: Argo Workflows（Pre-SIT Pipeline Orchestrator）──────────────────
+step "Step 8/9: Argo Workflows"
+helm repo add argo https://argoproj.github.io/argo-helm 2>/dev/null || true
+helm repo update argo > /dev/null
+helm upgrade --install argo-workflows argo/argo-workflows \
+  --namespace argo --create-namespace \
+  -f "${ROOT}/manifests/argo-workflows/10-install-values.yaml" \
+  --wait --timeout 5m
+kubectl apply -f "${ROOT}/manifests/argo-workflows/05-rbac.yaml"
+kubectl apply -f "${ROOT}/manifests/argo-workflows/20-workflow-template.yaml"
+kubectl apply -f "${ROOT}/manifests/argo-workflows/30-ingress.yaml"
+ok "Argo Workflows 就緒（http://argo.local:30080）"
 
 # ── Step 9: Observability（Prometheus + Grafana + Loki）─────────────────────
 step "Step 9/9: Observability"
@@ -135,19 +137,27 @@ echo "  ✅ v2.3 全棧安裝完成！"
 echo ""
 echo "  所有服務統一走 nginx-ingress（port :30080）"
 echo "    SIT PetClinic  http://sit.local:30080/"
-echo "    Jenkins        http://jenkins.local:30080/       無密碼"
+echo "    Argo Workflows http://argo.local:30080/         無需登入"
 echo "    Grafana        http://grafana.local:30080/       admin / presit-admin"
 echo "    ArgoCD         http://argocd.local:30080/"
 echo ""
 echo "  /etc/hosts（一次加入）:"
 echo "    sudo tee -a /etc/hosts <<'EOF'"
-echo "    127.0.0.1 sit.local jenkins.local grafana.local argocd.local"
+echo "    127.0.0.1 sit.local argo.local grafana.local argocd.local"
 echo "    EOF"
 echo ""
 echo "  下一步："
-echo "    1. 觸發 Jenkins pipeline（Build #1）："
-echo "         kubectl exec -n jenkins deploy/jenkins -- \\"
-echo "           curl -s -X POST http://localhost:8080/job/petclinic-presit/build"
+echo "    1. 觸發 Pre-SIT Pipeline（Argo Workflows）："
+echo "         kubectl create -f - <<EOF"
+echo "         apiVersion: argoproj.io/v1alpha1"
+echo "         kind: Workflow"
+echo "         metadata:"
+echo "           generateName: presit-pipeline-"
+echo "           namespace: argo"
+echo "         spec:"
+echo "           workflowTemplateRef:"
+echo "             name: presit-pipeline"
+echo "         EOF"
 echo ""
 echo "    2. 建立個人 SIT namespace："
 echo "         scripts/create-sit-user.sh --gitops <your-name>"

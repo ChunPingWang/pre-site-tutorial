@@ -1111,7 +1111,7 @@ Step 4/9  PetClinic image build + push   4 服務 + BDD runner，tag :v2.2
 Step 5/9  Sealed Secrets                 controller + SealedSecrets（pre-sit / sit）
 Step 6/9  pre-sit RBAC                   BDD runner SA/Role/RoleBinding（一次性）
 Step 7/9  ArgoCD Applications            app-pre-sit + app-sit + appset-sit-users
-Step 8/9  Jenkins                        2.492.3-lts，Ingress: jenkins.local
+Step 8/9  Argo Workflows                 Helm install + RBAC + WorkflowTemplate + Ingress: argo.local
 Step 9/9  Observability                  Prometheus + Grafana(grafana.local) + Loki + Promtail
 ```
 
@@ -1133,9 +1133,9 @@ curl -s -H 'Host: sit.local' http://localhost:30080/api/customer/owners | python
   "import sys,json; print(f'{len(json.load(sys.stdin))} owners')"
 # 預期：10 owners
 
-# 3. Jenkins 可到達
-curl -s -o /dev/null -w "%{http_code}" -H "Host: jenkins.local" http://localhost:30080/
-# 預期：200 或 403
+# 3. Argo Workflows 可到達
+curl -s -o /dev/null -w "%{http_code}" -H "Host: argo.local" http://localhost:30080/
+# 預期：200
 
 # 4. Prometheus targets
 kubectl -n monitoring port-forward svc/kube-prometheus-kube-prome-prometheus 9090:9090 &
@@ -1159,7 +1159,7 @@ kubectl get sealedsecret -A
 | 服務 | URL | 帳密 |
 |------|-----|------|
 | SIT PetClinic UI | `http://sit.local:30080/` | — |
-| Jenkins | `http://jenkins.local:30080/` | 無密碼 |
+| Argo Workflows | `http://argo.local:30080/` | 無需登入 |
 | Grafana | `http://grafana.local:30080/` | admin / presit-admin |
 | ArgoCD UI | `http://argocd.local:30080/` | admin / 見下方指令 |
 | Per-user SIT | `http://<username>-sit.local:30080/` | — |
@@ -1173,17 +1173,26 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 /etc/hosts（一次加入所有 host）：
 ```bash
 sudo tee -a /etc/hosts <<'EOF'
-127.0.0.1 sit.local jenkins.local grafana.local argocd.local
+127.0.0.1 sit.local argo.local grafana.local argocd.local
 EOF
 ```
 
 #### 下一步
 
 ```bash
-# A. 觸發第一次 Jenkins pipeline
-kubectl exec -n jenkins deploy/jenkins -- \
-  curl -s -X POST http://localhost:8080/job/petclinic-presit/build
-kubectl logs -n jenkins deploy/jenkins -f 2>/dev/null | grep "Finished\|stage\|error" | head -20
+# A. 觸發第一次 Pre-SIT Pipeline（Argo Workflows）
+kubectl create -f - <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: presit-pipeline-
+  namespace: argo
+spec:
+  workflowTemplateRef:
+    name: presit-pipeline
+EOF
+# 追蹤執行進度（UI: http://argo.local:30080）
+kubectl -n argo get workflows -w
 
 # B. 建立個人 SIT namespace（GitOps 模式）
 scripts/create-sit-user.sh --gitops alice
