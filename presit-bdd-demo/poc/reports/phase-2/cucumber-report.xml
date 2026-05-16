@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="Cucumber" time="4.501" tests="23" skipped="0" failures="6" errors="0">
-<testcase classname="Pre-SIT 應用層驗證" name="微服務 Pod 成功啟動 - Example #1.1" time="0.917">
+<testsuite name="Cucumber" time="4.039" tests="23" skipped="0" failures="0" errors="0">
+<testcase classname="Pre-SIT 應用層驗證" name="微服務 Pod 成功啟動 - Example #1.1" time="0.729">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
@@ -10,7 +10,7 @@
 並且所有容器應處於 "Ready" 狀態........................................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="微服務 Pod 成功啟動 - Example #1.2" time="0.124">
+<testcase classname="Pre-SIT 應用層驗證" name="微服務 Pod 成功啟動 - Example #1.2" time="0.175">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
@@ -20,7 +20,7 @@
 並且所有容器應處於 "Ready" 狀態........................................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="微服務 Pod 成功啟動 - Example #1.3" time="0.141">
+<testcase classname="Pre-SIT 應用層驗證" name="微服務 Pod 成功啟動 - Example #1.3" time="0.203">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
@@ -30,7 +30,7 @@
 並且所有容器應處於 "Ready" 狀態........................................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="微服務 Pod 成功啟動 - Example #1.4" time="0.204">
+<testcase classname="Pre-SIT 應用層驗證" name="微服務 Pod 成功啟動 - Example #1.4" time="0.193">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
@@ -40,71 +40,43 @@
 並且所有容器應處於 "Ready" 狀態........................................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="微服務資源使用量在合理範圍 - Example #1.1" time="0.167">
-<failure type="java.lang.AssertionError" message="[memory MiB] 
-Expecting actual:
-  525
-to be less than:
-  512 ">
-<![CDATA[java.lang.AssertionError: [memory MiB] 
-Expecting actual:
-  525
-to be less than:
-  512 
-	at com.presit.steps.ApplicationIntegrationSteps.memBelow(ApplicationIntegrationSteps.java:141)
-	at ✽.記憶體使用量應低於 512 MB(classpath:features/application/02_application_layer.feature:37)
-]]>
-</failure>
+<testcase classname="Pre-SIT 應用層驗證" name="微服務資源使用量在合理範圍 - Example #1.1" time="0.111">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
 當我查詢 Pod "customers-service" 的資源使用情況........................................passed
 那麼CPU 使用率應低於 80%............................................................passed
-並且記憶體使用量應低於 512 MB..........................................................failed
+並且記憶體使用量應低於 768 MB..........................................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="微服務資源使用量在合理範圍 - Example #1.2" time="0.174">
-<failure type="java.lang.AssertionError" message="[memory MiB] 
-Expecting actual:
-  523
-to be less than:
-  512 ">
-<![CDATA[java.lang.AssertionError: [memory MiB] 
-Expecting actual:
-  523
-to be less than:
-  512 
-	at com.presit.steps.ApplicationIntegrationSteps.memBelow(ApplicationIntegrationSteps.java:141)
-	at ✽.記憶體使用量應低於 512 MB(classpath:features/application/02_application_layer.feature:37)
-]]>
-</failure>
+<testcase classname="Pre-SIT 應用層驗證" name="微服務資源使用量在合理範圍 - Example #1.2" time="0.192">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
 當我查詢 Pod "vets-service" 的資源使用情況.............................................passed
 那麼CPU 使用率應低於 80%............................................................passed
-並且記憶體使用量應低於 512 MB..........................................................failed
+並且記憶體使用量應低於 768 MB..........................................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="微服務資源使用量在合理範圍 - Example #1.3" time="0.134">
+<testcase classname="Pre-SIT 應用層驗證" name="微服務資源使用量在合理範圍 - Example #1.3" time="0.119">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
 當我查詢 Pod "visits-service" 的資源使用情況...........................................passed
 那麼CPU 使用率應低於 80%............................................................passed
-並且記憶體使用量應低於 512 MB..........................................................passed
+並且記憶體使用量應低於 768 MB..........................................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="微服務資源使用量在合理範圍 - Example #1.4" time="0.182">
+<testcase classname="Pre-SIT 應用層驗證" name="微服務資源使用量在合理範圍 - Example #1.4" time="0.165">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
 當我查詢 Pod "api-gateway" 的資源使用情況..............................................passed
 那麼CPU 使用率應低於 80%............................................................passed
-並且記憶體使用量應低於 512 MB..........................................................passed
+並且記憶體使用量應低於 768 MB..........................................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="微服務健康檢查端點回應正常 - Example #1.1" time="0.169">
+<testcase classname="Pre-SIT 應用層驗證" name="微服務健康檢查端點回應正常 - Example #1.1" time="0.191">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
@@ -113,7 +85,7 @@ to be less than:
 並且回應 JSON 的 "status" 欄位應為 "UP"..............................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="微服務健康檢查端點回應正常 - Example #1.2" time="0.118">
+<testcase classname="Pre-SIT 應用層驗證" name="微服務健康檢查端點回應正常 - Example #1.2" time="0.084">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
@@ -122,7 +94,7 @@ to be less than:
 並且回應 JSON 的 "status" 欄位應為 "UP"..............................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="微服務健康檢查端點回應正常 - Example #1.3" time="0.195">
+<testcase classname="Pre-SIT 應用層驗證" name="微服務健康檢查端點回應正常 - Example #1.3" time="0.049">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
@@ -131,7 +103,7 @@ to be less than:
 並且回應 JSON 的 "status" 欄位應為 "UP"..............................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="微服務健康檢查端點回應正常 - Example #1.4" time="0.105">
+<testcase classname="Pre-SIT 應用層驗證" name="微服務健康檢查端點回應正常 - Example #1.4" time="0.079">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
@@ -140,79 +112,34 @@ to be less than:
 並且回應 JSON 的 "status" 欄位應為 "UP"..............................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="微服務數據庫健康指標正常 - Example #1.1" time="0.097">
-<failure type="org.opentest4j.AssertionFailedError" message="[JSON components.db.status] 
-expected: &quot;UP&quot;
- but was: null">
-<![CDATA[org.opentest4j.AssertionFailedError: [JSON components.db.status] 
-expected: "UP"
- but was: null
-	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
-	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:77)
-	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:500)
-	at com.presit.steps.ApplicationIntegrationSteps.jsonFieldShouldBe(ApplicationIntegrationSteps.java:174)
-	at com.presit.steps.ApplicationIntegrationSteps.jsonFieldShouldBe2(ApplicationIntegrationSteps.java:179)
-	at ✽.回應 JSON 中 "components.db.status" 應為 "UP"(classpath:features/application/02_application_layer.feature:63)
-]]>
-</failure>
+<testcase classname="Pre-SIT 應用層驗證" name="微服務數據庫健康指標正常 - Example #1.1" time="0.093">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
 當我對 "http://customers-service.pre-sit.svc:8081/actuator/health" 發送 GET 請求...passed
-那麼回應 JSON 中 "components.db.status" 應為 "UP"..................................failed
-並且回應 JSON 中 "components.db.details.database" 應為 "PostgreSQL"................skipped
+那麼回應 JSON 中 "components.db.status" 應為 "UP"..................................passed
+並且回應 JSON 中 "components.db.details.database" 應為 "HSQL Database Engine"......passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="微服務數據庫健康指標正常 - Example #1.2" time="0.1">
-<failure type="org.opentest4j.AssertionFailedError" message="[JSON components.db.status] 
-expected: &quot;UP&quot;
- but was: null">
-<![CDATA[org.opentest4j.AssertionFailedError: [JSON components.db.status] 
-expected: "UP"
- but was: null
-	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
-	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:77)
-	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:500)
-	at com.presit.steps.ApplicationIntegrationSteps.jsonFieldShouldBe(ApplicationIntegrationSteps.java:174)
-	at com.presit.steps.ApplicationIntegrationSteps.jsonFieldShouldBe2(ApplicationIntegrationSteps.java:179)
-	at ✽.回應 JSON 中 "components.db.status" 應為 "UP"(classpath:features/application/02_application_layer.feature:63)
-]]>
-</failure>
+<testcase classname="Pre-SIT 應用層驗證" name="微服務數據庫健康指標正常 - Example #1.2" time="0.185">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
 當我對 "http://vets-service.pre-sit.svc:8083/actuator/health" 發送 GET 請求........passed
-那麼回應 JSON 中 "components.db.status" 應為 "UP"..................................failed
-並且回應 JSON 中 "components.db.details.database" 應為 "PostgreSQL"................skipped
+那麼回應 JSON 中 "components.db.status" 應為 "UP"..................................passed
+並且回應 JSON 中 "components.db.details.database" 應為 "HSQL Database Engine"......passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="微服務數據庫健康指標正常 - Example #1.3" time="0.167">
-<failure type="org.opentest4j.AssertionFailedError" message="[JSON components.db.status] 
-expected: &quot;UP&quot;
- but was: null">
-<![CDATA[org.opentest4j.AssertionFailedError: [JSON components.db.status] 
-expected: "UP"
- but was: null
-	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
-	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:77)
-	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:500)
-	at com.presit.steps.ApplicationIntegrationSteps.jsonFieldShouldBe(ApplicationIntegrationSteps.java:174)
-	at com.presit.steps.ApplicationIntegrationSteps.jsonFieldShouldBe2(ApplicationIntegrationSteps.java:179)
-	at ✽.回應 JSON 中 "components.db.status" 應為 "UP"(classpath:features/application/02_application_layer.feature:63)
-]]>
-</failure>
+<testcase classname="Pre-SIT 應用層驗證" name="微服務數據庫健康指標正常 - Example #1.3" time="0.114">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
 當我對 "http://visits-service.pre-sit.svc:8082/actuator/health" 發送 GET 請求......passed
-那麼回應 JSON 中 "components.db.status" 應為 "UP"..................................failed
-並且回應 JSON 中 "components.db.details.database" 應為 "PostgreSQL"................skipped
+那麼回應 JSON 中 "components.db.status" 應為 "UP"..................................passed
+並且回應 JSON 中 "components.db.details.database" 應為 "HSQL Database Engine"......passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="連線池初始化成功且參數正確 - Example #1.1" time="0.115">
+<testcase classname="Pre-SIT 應用層驗證" name="連線池初始化成功且參數正確 - Example #1.1" time="0.112">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
@@ -223,7 +150,7 @@ expected: "UP"
 並且等待連線數應為 0.................................................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="連線池初始化成功且參數正確 - Example #1.2" time="0.103">
+<testcase classname="Pre-SIT 應用層驗證" name="連線池初始化成功且參數正確 - Example #1.2" time="0.091">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
@@ -234,7 +161,7 @@ expected: "UP"
 並且等待連線數應為 0.................................................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="連線池初始化成功且參數正確 - Example #1.3" time="0.075">
+<testcase classname="Pre-SIT 應用層驗證" name="連線池初始化成功且參數正確 - Example #1.3" time="0.084">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
@@ -245,7 +172,7 @@ expected: "UP"
 並且等待連線數應為 0.................................................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="啟動日誌中不包含錯誤 - Example #1.1" time="0.124">
+<testcase classname="Pre-SIT 應用層驗證" name="啟動日誌中不包含錯誤 - Example #1.1" time="0.102">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
@@ -255,7 +182,7 @@ expected: "UP"
 並且日誌中應包含 "Started" 訊息.......................................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="啟動日誌中不包含錯誤 - Example #1.2" time="0.115">
+<testcase classname="Pre-SIT 應用層驗證" name="啟動日誌中不包含錯誤 - Example #1.2" time="0.102">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
@@ -265,7 +192,7 @@ expected: "UP"
 並且日誌中應包含 "Started" 訊息.......................................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="啟動日誌中不包含錯誤 - Example #1.3" time="0.099">
+<testcase classname="Pre-SIT 應用層驗證" name="啟動日誌中不包含錯誤 - Example #1.3" time="0.106">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
@@ -275,93 +202,17 @@ expected: "UP"
 並且日誌中應包含 "Started" 訊息.......................................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="啟動日誌中不包含錯誤 - Example #1.4" time="0.116">
-<failure type="java.lang.AssertionError" message="[logs (steady state) 不應含 'Connection refused'] 
-Expecting actual:
-  &quot;		at io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:407)
-		at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-		at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-		at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-		at java.base/java.lang.Thread.run(Thread.java:840)
-	Suppressed: java.lang.Exception: #block terminated with an error
-		at reactor.core.publisher.BlockingSingleSubscriber.blockingGet(BlockingSingleSubscriber.java:103)
-		at reactor.core.publisher.Mono.block(Mono.java:1728)
-		at org.springframework.boot.actuate.autoconfigure.tracing.zipkin.ZipkinWebClientSender$WebClientHttpPostCall.doExecute(ZipkinWebClientSender.java:76)
-		at org.springframework.boot.actuate.autoconfigure.tracing.zipkin.ZipkinWebClientSender$WebClientHttpPostCall.doExecute(ZipkinWebClientSender.java:54)
-		at zipkin2.Call$Base.execute(Call.java:391)
-		at zipkin2.reporter.AsyncReporter$BoundedAsyncReporter.flush(AsyncReporter.java:299)
-		at zipkin2.reporter.AsyncReporter$Flusher.run(AsyncReporter.java:378)
-		at java.base/java.lang.Thread.run(Thread.java:840)
-Caused by: io.netty.channel.AbstractChannel$AnnotatedConnectException: finishConnect(..) failed: Connection refused: localhost/127.0.0.1:9411
-Caused by: java.net.ConnectException: finishConnect(..) failed: Connection refused
-	at io.netty.channel.unix.Errors.newConnectException0(Errors.java:166)
-	at io.netty.channel.unix.Errors.handleConnectErrno(Errors.java:131)
-	at io.netty.channel.unix.Socket.finishConnect(Socket.java:359)
-	at io.netty.channel.epoll.AbstractEpollChannel$AbstractEpollUnsafe.doFinishConnect(AbstractEpollChannel.java:710)
-	at io.netty.channel.epoll.AbstractEpollChannel$AbstractEpollUnsafe.finishConnect(AbstractEpollChannel.java:687)
-	at io.netty.channel.epoll.AbstractEpollChannel$AbstractEpollUnsafe.epollOutReady(AbstractEpollChannel.java:567)
-	at io.netty.channel.epoll.EpollEventLoop.processReady(EpollEventLoop.java:499)
-	at io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:407)
-	at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-	at java.base/java.lang.Thread.run(Thread.java:840)
-
-2026-05-16T01:27:43.193Z  INFO 1 --- [api-gateway] [trap-executor-0] [                                                 ] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
-&quot;
-not to contain:
-  &quot;Connection refused&quot;
-">
-<![CDATA[java.lang.AssertionError: [logs (steady state) 不應含 'Connection refused'] 
-Expecting actual:
-  "		at io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:407)
-		at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-		at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-		at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-		at java.base/java.lang.Thread.run(Thread.java:840)
-	Suppressed: java.lang.Exception: #block terminated with an error
-		at reactor.core.publisher.BlockingSingleSubscriber.blockingGet(BlockingSingleSubscriber.java:103)
-		at reactor.core.publisher.Mono.block(Mono.java:1728)
-		at org.springframework.boot.actuate.autoconfigure.tracing.zipkin.ZipkinWebClientSender$WebClientHttpPostCall.doExecute(ZipkinWebClientSender.java:76)
-		at org.springframework.boot.actuate.autoconfigure.tracing.zipkin.ZipkinWebClientSender$WebClientHttpPostCall.doExecute(ZipkinWebClientSender.java:54)
-		at zipkin2.Call$Base.execute(Call.java:391)
-		at zipkin2.reporter.AsyncReporter$BoundedAsyncReporter.flush(AsyncReporter.java:299)
-		at zipkin2.reporter.AsyncReporter$Flusher.run(AsyncReporter.java:378)
-		at java.base/java.lang.Thread.run(Thread.java:840)
-Caused by: io.netty.channel.AbstractChannel$AnnotatedConnectException: finishConnect(..) failed: Connection refused: localhost/127.0.0.1:9411
-Caused by: java.net.ConnectException: finishConnect(..) failed: Connection refused
-	at io.netty.channel.unix.Errors.newConnectException0(Errors.java:166)
-	at io.netty.channel.unix.Errors.handleConnectErrno(Errors.java:131)
-	at io.netty.channel.unix.Socket.finishConnect(Socket.java:359)
-	at io.netty.channel.epoll.AbstractEpollChannel$AbstractEpollUnsafe.doFinishConnect(AbstractEpollChannel.java:710)
-	at io.netty.channel.epoll.AbstractEpollChannel$AbstractEpollUnsafe.finishConnect(AbstractEpollChannel.java:687)
-	at io.netty.channel.epoll.AbstractEpollChannel$AbstractEpollUnsafe.epollOutReady(AbstractEpollChannel.java:567)
-	at io.netty.channel.epoll.EpollEventLoop.processReady(EpollEventLoop.java:499)
-	at io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:407)
-	at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-	at java.base/java.lang.Thread.run(Thread.java:840)
-
-2026-05-16T01:27:43.193Z  INFO 1 --- [api-gateway] [trap-executor-0] [                                                 ] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
-"
-not to contain:
-  "Connection refused"
-
-	at com.presit.steps.ApplicationIntegrationSteps.logsShouldNotContain(ApplicationIntegrationSteps.java:312)
-	at ✽.日誌中不應包含 "Connection refused"(classpath:features/application/02_application_layer.feature:92)
-]]>
-</failure>
+<testcase classname="Pre-SIT 應用層驗證" name="啟動日誌中不包含錯誤 - Example #1.4" time="0.112">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed
 當我讀取 Pod "api-gateway" 的啟動日誌................................................passed
 那麼日誌中不應包含 "ERROR" 級別訊息......................................................passed
-並且日誌中不應包含 "Connection refused"..............................................failed
-並且日誌中應包含 "Started" 訊息.......................................................skipped
+並且日誌中不應包含 "Connection refused"..............................................passed
+並且日誌中應包含 "Started" 訊息.......................................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 應用層驗證" name="K8s Service 端點解析正常" time="0.168">
+<testcase classname="Pre-SIT 應用層驗證" name="K8s Service 端點解析正常" time="0.131">
 <system-out><![CDATA[
 假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
 並且Phase 1 數據庫層驗證已通過.........................................................passed

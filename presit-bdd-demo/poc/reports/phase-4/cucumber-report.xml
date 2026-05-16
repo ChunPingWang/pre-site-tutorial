@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="Cucumber" time="39.001" tests="5" skipped="0" failures="0" errors="0">
-<testcase classname="Pre-SIT 端到端驗證與 Go/No-Go 決策" name="完整的寵物看診業務流程" time="0.484">
+<testsuite name="Cucumber" time="38.192" tests="5" skipped="0" failures="0" errors="0">
+<testcase classname="Pre-SIT 端到端驗證與 Go/No-Go 決策" name="完整的寵物看診業務流程" time="0.514">
 <system-out><![CDATA[
 假設Phase 1 數據庫層驗證已通過.........................................................passed
 並且Phase 2 應用層驗證已通過..........................................................passed
@@ -19,7 +19,7 @@
 那麼清理應成功.....................................................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 端到端驗證與 Go/No-Go 決策" name="API 回應時間在可接受範圍內" time="7.97">
+<testcase classname="Pre-SIT 端到端驗證與 Go/No-Go 決策" name="API 回應時間在可接受範圍內" time="7.262">
 <system-out><![CDATA[
 假設Phase 1 數據庫層驗證已通過.........................................................passed
 並且Phase 2 應用層驗證已通過..........................................................passed
@@ -30,7 +30,7 @@
 並且所有請求的成功率應達 99% 以上.........................................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 端到端驗證與 Go/No-Go 決策" name="並發請求下系統保持穩定" time="30.148">
+<testcase classname="Pre-SIT 端到端驗證與 Go/No-Go 決策" name="並發請求下系統保持穩定" time="30.075">
 <system-out><![CDATA[
 假設Phase 1 數據庫層驗證已通過.........................................................passed
 並且Phase 2 應用層驗證已通過..........................................................passed
@@ -41,7 +41,7 @@
 並且Pod 不應發生 OOMKilled 或 CrashLoopBackOff.....................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 端到端驗證與 Go/No-Go 決策" name="ArgoCD 應用同步狀態正常" time="0.042">
+<testcase classname="Pre-SIT 端到端驗證與 Go/No-Go 決策" name="ArgoCD 應用同步狀態正常" time="0.048">
 <system-out><![CDATA[
 假設Phase 1 數據庫層驗證已通過.........................................................passed
 並且Phase 2 應用層驗證已通過..........................................................passed
@@ -52,7 +52,7 @@
 並且所有資源的同步結果應為 "SyncOK"......................................................passed
 ]]></system-out>
 </testcase>
-<testcase classname="Pre-SIT 端到端驗證與 Go/No-Go 決策" name="彙整驗證結果並產出決策報告" time="0.038">
+<testcase classname="Pre-SIT 端到端驗證與 Go/No-Go 決策" name="彙整驗證結果並產出決策報告" time="0.044">
 <system-out><![CDATA[
 假設Phase 1 數據庫層驗證已通過.........................................................passed
 並且Phase 2 應用層驗證已通過..........................................................passed

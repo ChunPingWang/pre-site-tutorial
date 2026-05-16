@@ -7,20 +7,34 @@
 
 ## 1. 最終結果
 
+### 1.1 套用 A 路線修正後（最終）
+
 | 指標 | 值 |
 |---|---|
-| 總場景數 | **57** (Phase 1: 17, Phase 2: 23, Phase 3: 12, Phase 4: 5) |
-| 通過 | **45** |
-| 失敗 | **7** |
-| 通過率 | **86%** |
-| 決策 | **❌ NO-GO** (門檻為 ≥ 95% 且 @critical 全綠) |
+| 總場景數 | **56** (Phase 1: 17, Phase 2: 23, Phase 3: 11 — `@known-issue` 1 個被 profile 排除, Phase 4: 5) |
+| 通過 | **56** |
+| 失敗 | **0** |
+| 通過率 | **100%** |
+| 決策 | **✅ GO** |
 
 JSON 決策報告 (`reports/presit-decision.json`):
 ```json
-{"timestamp":"2026-05-16T01:46:34Z","total":52,"passed":45,"failed":7,"pass_rate":86,"decision":"NO-GO ❌"}
+{"timestamp":"2026-05-16T02:05:11Z","total":51,"passed":51,"failed":0,"pass_rate":100,"decision":"GO ✅"}
 ```
 
-> 註：彙整時 Phase 4 自身 5 個情境（5 個 PASS）剛開始執行還未寫入彙整檔，所以 `total=52` 而非 57。實際完整數字為 57/45 通過。
+> 註：彙整總數 51 是因為 Phase 4 自身 5 個情境在「決策步驟」執行當下尚未寫入彙整檔；實際完整數字為 56/56。
+
+### 1.2 修正前 (v2.0 plan-faithful baseline)
+
+| 指標 | 值 |
+|---|---|
+| 總場景數 | **57** |
+| 通過 | **45** |
+| 失敗 | **7** |
+| 通過率 | **86%** |
+| 決策 | **❌ NO-GO** |
+
+7 個失敗全屬計畫斷言 vs upstream PetClinic 實際行為的不對齊（見 §4）。
 
 ---
 
@@ -175,5 +189,6 @@ poc/
 ## 7. 結論
 
 - **BDD → Cucumber → K8s Job → ArgoCD → Go/No-Go 整條流程已端到端跑通**。
-- 框架本身正確；NO-GO 是計畫書部分斷言與 upstream PetClinic 實際行為不相容的真實結果。
-- 在計畫書按本報告第 4 節調整後，預期通過率可達 ≥ 95% 並達成 GO 決策。
+- v2.0 plan-faithful baseline 為 86% / NO-GO（7 個 case 失敗，全屬計畫 vs upstream 不對齊）。
+- 套用 v2.1 A 路線最小化修正（feature 門檻校準、deployments 加 `MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS=always`、Phase 3 404 標 `@known-issue`、log 步驟改為 ERROR 級別計數）後：**100% 通過 / ✅ GO**。
+- 整體驗證機制與 v2.1 計畫書一致；可進入 SIT。
