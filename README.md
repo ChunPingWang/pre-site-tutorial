@@ -650,7 +650,8 @@ graph LR
 
     subgraph 規劃文件
         P1[Pre-SIT_Work_Plan_v2.md<br/>v2.0 原始版]
-        P2[Pre-SIT_Work_Plan_v2.1.md<br/>v2.1 PoC 校準版 ⭐]
+        P2[Pre-SIT_Work_Plan_v2.1.md<br/>v2.1 PoC 校準版]
+        P3[Pre-SIT_Work_Plan_v2.2.md<br/>v2.2 雙環境架構 ⭐]
     end
 
     subgraph 教學文件
@@ -659,7 +660,7 @@ graph LR
     end
 
     subgraph PoC 實作
-        PR[poc/POC_RESULTS.md<br/>實跑結果 + 修正建議]
+        PR[poc/POC_RESULTS.md<br/>v2.1 實跑結果 + 修正建議]
         K[poc/kind/up.sh<br/>環境啟動]
         SQL[poc/sql/<br/>DDL + DML]
         M[poc/manifests/<br/>K8s YAML]
@@ -668,10 +669,11 @@ graph LR
         REP[poc/reports/<br/>cucumber 報告]
     end
 
-    R -->|理解原理| P2
+    R -->|理解現行架構| P3
     R -->|理解語法| G
     R -->|實際操作| K
-    P2 -.參考 baseline.-> P1
+    P3 -.演進自.-> P2
+    P2 -.演進自.-> P1
     P2 -.驗證來源.-> PR
     G -->|延伸閱讀| DG
     PR --> K
@@ -682,19 +684,31 @@ graph LR
     PR --> REP
 
     style R fill:#fd9,stroke:#a60
-    style P2 fill:#9cf
+    style P3 fill:#9cf,stroke:#069,stroke-width:3px
+    style P2 fill:#cef
     style PR fill:#cfc
 ```
 
 | 文件 | 角色 | 何時讀 |
 |------|------|--------|
 | **`README.md`** ⭐ (本檔) | 入口與全貌 | 第一次接觸時 |
-| **[`Pre-SIT_Work_Plan_v2.1.md`](Pre-SIT_Work_Plan_v2.1.md)** | 正式工作計畫書（v2.1，已套用 PoC 校準） | 規劃 / 驗收 |
-| [`Pre-SIT_Work_Plan_v2.md`](Pre-SIT_Work_Plan_v2.md) | v2.0 原始版（保留供對比） | 想理解版本演進時 |
+| **[`Pre-SIT_Work_Plan_v2.2.md`](Pre-SIT_Work_Plan_v2.2.md)** ⭐ | **現行工作計畫書（v2.2，雙環境 + vendor PetClinic + Flyway + Jenkins + Ingress）** | 規劃 / 驗收 / 新加入專案 |
+| [`Pre-SIT_Work_Plan_v2.1.md`](Pre-SIT_Work_Plan_v2.1.md) | 上一代計畫書（v2.1，plan-faithful + upstream-as-is，PoC 已達 100% GO） | 對照 v2.1 → v2.2 的架構轉向 |
+| [`Pre-SIT_Work_Plan_v2.md`](Pre-SIT_Work_Plan_v2.md) | v2.0 原始版（最初版本） | 想完整理解版本演進 |
 | **[`Pre-SIT_Gherkin_to_Script_Guide.md`](Pre-SIT_Gherkin_to_Script_Guide.md)** | Gherkin ↔ Java step 對應教學 | 寫測試前 |
-| **[`presit-bdd-demo/poc/POC_RESULTS.md`](presit-bdd-demo/poc/POC_RESULTS.md)** | PoC 實跑成績、失敗 case 分析、A 路線修正 | 想知道「真的能跑嗎、會踩什麼雷」 |
+| **[`presit-bdd-demo/poc/POC_RESULTS.md`](presit-bdd-demo/poc/POC_RESULTS.md)** | v2.1 PoC 實跑成績、失敗 case 分析、A 路線修正 | 想知道「真的能跑嗎、會踩什麼雷」 |
 | [`presit-bdd-demo/docs/guide.md`](presit-bdd-demo/docs/guide.md) | v2.0 原始 demo 操作手冊 | 對照 v2.0 demo 版本 |
-| [`presit-bdd-demo/poc/`](presit-bdd-demo/poc/) | 可實際執行的完整 PoC 程式碼 | 想跑或修改 |
+| [`presit-bdd-demo/poc/`](presit-bdd-demo/poc/) | 可實際執行的 v2.1 PoC 程式碼 | 想跑或修改 v2.1 版 |
+
+### 6.1 三個計畫書版本的選擇指引
+
+| 你的情境 | 看哪一份 |
+|----------|----------|
+| 第一次接觸這個專案、想快速理解全貌 | **README.md**（本檔） |
+| 要新組織導入、要寫提案 / 要簽核 | **v2.2**（雙環境、vendored source、完整 CI/CD） |
+| 已經有 v2.1 PoC、想知道升級路徑 | **v2.2 §10**「v2.1 → v2.2 變更對照」 |
+| 想用最少資源跑通一個 demo | **v2.1** + `presit-bdd-demo/poc/`（已可跑、100% GO） |
+| 學術 / 教學 / 想了解設計演進 | 依序 v2.0 → v2.1 → v2.2 |
 
 ---
 
