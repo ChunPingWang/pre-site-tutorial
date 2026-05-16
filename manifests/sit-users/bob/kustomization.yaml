@@ -1,0 +1,53 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# overlay 指向共用 base
+resources:
+- ../../sit-user-base
+- 00-namespace.yaml
+- 06-sealed-db-credentials.yaml
+
+# Kustomize 的 namespace 指令會套用到除 Namespace 本身以外的所有資源
+namespace: sit-bob
+
+images:
+- name: localhost:5000/petclinic-customers-service
+  newTag: v2.2
+- name: localhost:5000/petclinic-vets-service
+  newTag: v2.2
+- name: localhost:5000/petclinic-visits-service
+  newTag: v2.2
+- name: localhost:5000/petclinic-api-gateway
+  newTag: v2.2
+
+patches:
+# ConfigMap 的 svc 參照必須指向正確 namespace（namespace 指令不改 data 內容）
+- patch: |
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: petclinic-db-config
+    data:
+      POSTGRES_HOST: "postgres.sit-bob.svc"
+      CUSTOMERS_SERVICE_URI: "http://customers-service.sit-bob.svc:8081"
+      VETS_SERVICE_URI:      "http://vets-service.sit-bob.svc:8083"
+      VISITS_SERVICE_URI:    "http://visits-service.sit-bob.svc:8082"
+
+# Ingress host 換成 <username>-sit.local
+- patch: |
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: petclinic
+    spec:
+      rules:
+      - host: bob-sit.local
+        http:
+          paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 8080
