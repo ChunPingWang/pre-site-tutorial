@@ -12,6 +12,7 @@
 
 1. [這份教學要解決的問題](#1-這份教學要解決的問題)
 2. [核心設計原理](#2-核心設計原理)
+   - [2.5 Pre-SIT Promotion Gate](#25-pre-sit-promotion-gate以容器化資料庫實現穩定的-ci-自動化驗證)
 3. [C4 模型架構圖](#3-c4-模型架構圖)
 4. [Phase 1–4 執行序列圖](#4-phase-14-執行序列圖)
 5. [BDD 框架類別圖](#5-bdd-框架類別圖)
@@ -172,6 +173,22 @@ flowchart TB
 mvn test -Dcucumber.filter.tags="@phase-2 and @smoke"
 mvn test -Dcucumber.filter.tags="@critical and not @known-issue"
 ```
+
+### 2.5 Pre-SIT Promotion Gate：以容器化資料庫實現穩定的 CI 自動化驗證
+
+Pre-SIT 是 CI Pipeline 內的 Promotion Gate，以 BDD 測試作為 Build Verification，通過後才允許將 artifact promote 進入 SIT 環境。
+
+傳統做法是直接在 SIT 環境上跑測試，但 SIT 資料庫由多個角色共用，資料狀態隨時可能被測試人員、BA、SA 異動，導致自動化測試結果不穩定，失敗時也難以判斷是程式問題還是資料問題。更麻煩的是，一旦資料被改壞，就得人工回滾資料庫，拖慢整個流程。
+
+Pre-SIT 的做法是在 CI 階段，為每一次 build 獨立啟動一套容器化資料庫，搭配 CI 工具（Argo Workflows）自動完成從環境初始化、BDD 測試執行到 Go/No-Go 決策的完整流程：
+
+- **資料狀態可控**：容器資料庫每次從已知的初始狀態啟動，測試資料不受外部干擾，結果穩定可重複。
+- **測試全自動、零人工介入**：Argo Workflows 依序執行 Phase 1–4，從 DB Schema 驗證到 E2E 決策，無需人工觸發或監看。
+- **SIT 環境不受污染**：測試在獨立容器內完成，SIT 資料庫完全不被碰觸，BA/SA 的測試資料保持原狀。
+- **不需回滾**：因為從未在 SIT 上跑自動化測試，就不存在「跑壞了要回滾」的問題。
+- **BA/SA 時間用在刀口上**：自動化驗證交給 CI，BA/SA 進入 SIT 時直接面對已通過基線驗證的版本，可將精力集中在探索性測試、業務情境驗證等高價值工作。
+
+只有當所有 BDD 測試通過、Phase 4 回傳 `"decision": "GO ✅"` 後，CI Pipeline 才允許將映像檔標記為 `:sit-approved` 並 promote 進 SIT，確保每一個進入正式測試環境的版本都是「有自動化證據支撐」的。
 
 ---
 
