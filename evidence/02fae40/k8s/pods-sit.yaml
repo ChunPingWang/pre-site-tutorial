@@ -1,0 +1,741 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-05-16T10:34:53Z"
+    generateName: api-gateway-5fc858bdf8-
+    labels:
+      app: api-gateway
+      pod-template-hash: 5fc858bdf8
+    name: api-gateway-5fc858bdf8-8mztz
+    namespace: sit
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: api-gateway-5fc858bdf8
+      uid: 91d7fcb6-ab09-4e40-995b-a0468b4fcf26
+    resourceVersion: "28565"
+    uid: 5d6fa060-79d9-4321-ad27-9004dc2800a8
+  spec:
+    containers:
+    - envFrom:
+      - configMapRef:
+          name: petclinic-db-config
+      image: localhost:5000/petclinic-api-gateway:sit-approved
+      imagePullPolicy: Always
+      name: app
+      ports:
+      - containerPort: 8080
+        protocol: TCP
+      readinessProbe:
+        failureThreshold: 30
+        httpGet:
+          path: /actuator/health
+          port: 8080
+          scheme: HTTP
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 1
+      resources:
+        limits:
+          cpu: "1"
+          memory: 768Mi
+        requests:
+          cpu: 100m
+          memory: 384Mi
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-tnhpg
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: presit-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-tnhpg
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:34:54Z"
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:34:53Z"
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:35:24Z"
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:35:24Z"
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:34:53Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://c19d321a504483c4602e19acaa05abc44a7b9767996b6519b7fa4ac65e4beefb
+      image: localhost:5000/petclinic-api-gateway:sit-approved
+      imageID: localhost:5000/petclinic-api-gateway@sha256:8992c240f1a7ae034b9ceeb3302767c1c9e1d292c187c6dd4f736fb2d53a0b9c
+      lastState: {}
+      name: app
+      ready: true
+      restartCount: 0
+      started: true
+      state:
+        running:
+          startedAt: "2026-05-16T10:34:54Z"
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-tnhpg
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.2
+    hostIPs:
+    - ip: 172.18.0.2
+    phase: Running
+    podIP: 10.244.0.90
+    podIPs:
+    - ip: 10.244.0.90
+    qosClass: Burstable
+    startTime: "2026-05-16T10:34:53Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-05-16T10:35:53Z"
+    generateName: customers-service-6594b9fc45-
+    labels:
+      app: customers-service
+      pod-template-hash: 6594b9fc45
+    name: customers-service-6594b9fc45-4jgnc
+    namespace: sit
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: customers-service-6594b9fc45
+      uid: 27ffa296-4c6f-41a9-a938-932d511b679c
+    resourceVersion: "28767"
+    uid: e36b6b55-0ccc-4157-ad36-435d10016938
+  spec:
+    containers:
+    - envFrom:
+      - configMapRef:
+          name: petclinic-db-config
+      - secretRef:
+          name: petclinic-db-credentials
+      image: localhost:5000/petclinic-customers-service:sit-approved
+      imagePullPolicy: Always
+      name: app
+      ports:
+      - containerPort: 8081
+        protocol: TCP
+      readinessProbe:
+        failureThreshold: 30
+        httpGet:
+          path: /actuator/health
+          port: 8081
+          scheme: HTTP
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 1
+      resources:
+        limits:
+          cpu: "1"
+          memory: 768Mi
+        requests:
+          cpu: 100m
+          memory: 384Mi
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-8rl4w
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: presit-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-8rl4w
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:35:54Z"
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:35:53Z"
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:36:34Z"
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:36:34Z"
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:35:53Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://f93c09f40e7caf39bdb7c08a09c5ae76712f7d8f522025aeba5fd36651c70801
+      image: localhost:5000/petclinic-customers-service:sit-approved
+      imageID: localhost:5000/petclinic-customers-service@sha256:c80c59800f353156ea396da27f49549b3146e31ca4300b2bc29e2aafe0b9e8ce
+      lastState: {}
+      name: app
+      ready: true
+      restartCount: 0
+      started: true
+      state:
+        running:
+          startedAt: "2026-05-16T10:35:54Z"
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-8rl4w
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.2
+    hostIPs:
+    - ip: 172.18.0.2
+    phase: Running
+    podIP: 10.244.0.91
+    podIPs:
+    - ip: 10.244.0.91
+    qosClass: Burstable
+    startTime: "2026-05-16T10:35:53Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-05-16T10:24:34Z"
+    generateName: postgres-
+    labels:
+      app: postgres
+      apps.kubernetes.io/pod-index: "0"
+      controller-revision-hash: postgres-548b865545
+      statefulset.kubernetes.io/pod-name: postgres-0
+    name: postgres-0
+    namespace: sit
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: StatefulSet
+      name: postgres
+      uid: f98bd3e2-e4f6-4346-8a64-c5fac072e90e
+    resourceVersion: "27314"
+    uid: 5010ce9e-87ff-443b-9b36-6e51e5e7ccd6
+  spec:
+    containers:
+    - env:
+      - name: POSTGRES_DB
+        valueFrom:
+          configMapKeyRef:
+            key: POSTGRES_DB
+            name: petclinic-db-config
+      - name: POSTGRES_USER
+        valueFrom:
+          secretKeyRef:
+            key: POSTGRES_USER
+            name: petclinic-db-credentials
+      - name: POSTGRES_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            key: POSTGRES_PASSWORD
+            name: petclinic-db-credentials
+      - name: PGDATA
+        value: /var/lib/postgresql/data/pgdata
+      image: postgres:16-alpine
+      imagePullPolicy: IfNotPresent
+      name: postgres
+      ports:
+      - containerPort: 5432
+        name: postgres
+        protocol: TCP
+      readinessProbe:
+        exec:
+          command:
+          - pg_isready
+          - -U
+          - petclinic
+          - -d
+          - petclinic
+        failureThreshold: 3
+        initialDelaySeconds: 5
+        periodSeconds: 5
+        successThreshold: 1
+        timeoutSeconds: 1
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 100m
+          memory: 256Mi
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/lib/postgresql/data
+        name: data
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-6d7lk
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    hostname: postgres-0
+    nodeName: presit-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    subdomain: postgres
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: data-postgres-0
+    - name: kube-api-access-6d7lk
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:24:39Z"
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:24:38Z"
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:24:44Z"
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:24:44Z"
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:24:38Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://b9665c10b90a4b934046fdd772a0f631cef70b4a23863fc4e6f347a82534c612
+      image: docker.io/library/postgres:16-alpine
+      imageID: docker.io/library/postgres@sha256:890480b08124ce7f79960a9bb16fe39729aa302bd384bfd7c408fee6c8f7adb7
+      lastState: {}
+      name: postgres
+      ready: true
+      restartCount: 0
+      started: true
+      state:
+        running:
+          startedAt: "2026-05-16T10:24:39Z"
+      volumeMounts:
+      - mountPath: /var/lib/postgresql/data
+        name: data
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-6d7lk
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.2
+    hostIPs:
+    - ip: 172.18.0.2
+    phase: Running
+    podIP: 10.244.0.85
+    podIPs:
+    - ip: 10.244.0.85
+    qosClass: Burstable
+    startTime: "2026-05-16T10:24:38Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-05-16T10:35:53Z"
+    generateName: vets-service-b49bbb8f5-
+    labels:
+      app: vets-service
+      pod-template-hash: b49bbb8f5
+    name: vets-service-b49bbb8f5-vcfdk
+    namespace: sit
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: vets-service-b49bbb8f5
+      uid: 4c7f0251-1c26-44ad-8463-f3a8a741620a
+    resourceVersion: "28762"
+    uid: a9cc3c6c-5509-4f61-b3a6-c2c3c55df6b1
+  spec:
+    containers:
+    - envFrom:
+      - configMapRef:
+          name: petclinic-db-config
+      - secretRef:
+          name: petclinic-db-credentials
+      image: localhost:5000/petclinic-vets-service:sit-approved
+      imagePullPolicy: Always
+      name: app
+      ports:
+      - containerPort: 8083
+        protocol: TCP
+      readinessProbe:
+        failureThreshold: 30
+        httpGet:
+          path: /actuator/health
+          port: 8083
+          scheme: HTTP
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 1
+      resources:
+        limits:
+          cpu: "1"
+          memory: 768Mi
+        requests:
+          cpu: 100m
+          memory: 384Mi
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-t6qz4
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: presit-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-t6qz4
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:35:54Z"
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:35:53Z"
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:36:34Z"
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:36:34Z"
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:35:53Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://4ecac41a45d6fe8718d379c230ae4a7b5a2ed3c0a6bf5c5c09ba1428cfdec167
+      image: localhost:5000/petclinic-vets-service:sit-approved
+      imageID: localhost:5000/petclinic-vets-service@sha256:0afbb4654c8397c14e8269de0016abaad8d5798bbda5985f32bbcd49e282662d
+      lastState: {}
+      name: app
+      ready: true
+      restartCount: 0
+      started: true
+      state:
+        running:
+          startedAt: "2026-05-16T10:35:54Z"
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-t6qz4
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.2
+    hostIPs:
+    - ip: 172.18.0.2
+    phase: Running
+    podIP: 10.244.0.92
+    podIPs:
+    - ip: 10.244.0.92
+    qosClass: Burstable
+    startTime: "2026-05-16T10:35:53Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-05-16T10:35:53Z"
+    generateName: visits-service-84d8899987-
+    labels:
+      app: visits-service
+      pod-template-hash: 84d8899987
+    name: visits-service-84d8899987-sbsrh
+    namespace: sit
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: visits-service-84d8899987
+      uid: ee15570f-eb04-43ee-94f3-8fcd983a231c
+    resourceVersion: "28794"
+    uid: ca4a7847-c484-4e5a-b5f2-c3d19a946b78
+  spec:
+    containers:
+    - envFrom:
+      - configMapRef:
+          name: petclinic-db-config
+      - secretRef:
+          name: petclinic-db-credentials
+      image: localhost:5000/petclinic-visits-service:sit-approved
+      imagePullPolicy: Always
+      name: app
+      ports:
+      - containerPort: 8082
+        protocol: TCP
+      readinessProbe:
+        failureThreshold: 30
+        httpGet:
+          path: /actuator/health
+          port: 8082
+          scheme: HTTP
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 1
+      resources:
+        limits:
+          cpu: "1"
+          memory: 768Mi
+        requests:
+          cpu: 100m
+          memory: 384Mi
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-4c529
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: presit-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-4c529
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:35:54Z"
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:35:53Z"
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:36:34Z"
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:36:34Z"
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:35:53Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://83105398b36be4df303ddc8b1a487fb1397439a1cd1e58f2ef63609c23240728
+      image: localhost:5000/petclinic-visits-service:sit-approved
+      imageID: localhost:5000/petclinic-visits-service@sha256:81cdcb25c37b948ab1778b73df520761fe4b6ce69321d3caa3762d4189866838
+      lastState: {}
+      name: app
+      ready: true
+      restartCount: 0
+      started: true
+      state:
+        running:
+          startedAt: "2026-05-16T10:35:54Z"
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-4c529
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.2
+    hostIPs:
+    - ip: 172.18.0.2
+    phase: Running
+    podIP: 10.244.0.93
+    podIPs:
+    - ip: 10.244.0.93
+    qosClass: Burstable
+    startTime: "2026-05-16T10:35:53Z"
+kind: List
+metadata:
+  resourceVersion: ""

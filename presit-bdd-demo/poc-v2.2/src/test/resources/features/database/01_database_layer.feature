@@ -147,14 +147,16 @@
 
   @dml @sample-data
   場景: 標準測試數據內容正確 (含 v2.2 新增 city)
+    # v2.2 注意: 不檢查 address，因為 Phase 3 的「更新 Owner 資訊」場景會改 address
+    # 為 "Updated Address 999"；Pre-SIT 跨 BDD run 重啟 (rollout restart) emptyDir 不清，
+    # 會造成跨 Phase 數據污染。檢查 immutable 欄位（last_name/city/telephone）已足以辨識。
     當 我查詢 customers_schema.owners 表中 first_name 為 "George" 的記錄
     那麼 應返回 1 筆記錄
     並且 該記錄的欄位值為:
-      | field      | value              |
-      | last_name  | Franklin           |
-      | address    | 110 W. Liberty St. |
-      | city       | Madison            |
-      | telephone  | 6085551023         |
+      | field      | value        |
+      | last_name  | Franklin     |
+      | city       | Madison      |
+      | telephone  | 6085551023   |
 
   # ─── 序列與自增驗證 ────────────────────────────
   @ddl @sequences

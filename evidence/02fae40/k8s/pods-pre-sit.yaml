@@ -1,0 +1,1819 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-05-16T10:03:46Z"
+    generateName: api-gateway-59c784bd86-
+    labels:
+      app: api-gateway
+      pod-template-hash: 59c784bd86
+    name: api-gateway-59c784bd86-55bp7
+    namespace: pre-sit
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: api-gateway-59c784bd86
+      uid: 561d74af-bf96-4126-a513-74a7db2d924b
+    resourceVersion: "25337"
+    uid: b6442358-4424-4084-b5a1-4cc0b06c01ac
+  spec:
+    containers:
+    - envFrom:
+      - configMapRef:
+          name: petclinic-db-config
+      image: localhost:5000/petclinic-api-gateway:v2.2
+      imagePullPolicy: Always
+      name: app
+      ports:
+      - containerPort: 8080
+        protocol: TCP
+      readinessProbe:
+        failureThreshold: 30
+        httpGet:
+          path: /actuator/health
+          port: 8080
+          scheme: HTTP
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 1
+      resources:
+        limits:
+          cpu: "1"
+          memory: 768Mi
+        requests:
+          cpu: 100m
+          memory: 384Mi
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-cphxc
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: presit-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-cphxc
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:03:50Z"
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:03:46Z"
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:04:27Z"
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:04:27Z"
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T10:03:46Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://ced98bc7db28b0403cbc10284c5c5859634afeae074734cd7bd4e15a4719175c
+      image: localhost:5000/petclinic-api-gateway:v2.2
+      imageID: localhost:5000/petclinic-api-gateway@sha256:8992c240f1a7ae034b9ceeb3302767c1c9e1d292c187c6dd4f736fb2d53a0b9c
+      lastState: {}
+      name: app
+      ready: true
+      restartCount: 0
+      started: true
+      state:
+        running:
+          startedAt: "2026-05-16T10:03:49Z"
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-cphxc
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.2
+    hostIPs:
+    - ip: 172.18.0.2
+    phase: Running
+    podIP: 10.244.0.70
+    podIPs:
+    - ip: 10.244.0.70
+    qosClass: Burstable
+    startTime: "2026-05-16T10:03:46Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/restartedAt: "2026-05-16T19:05:50+08:00"
+    creationTimestamp: "2026-05-16T11:05:50Z"
+    generateName: customers-service-7578d76799-
+    labels:
+      app: customers-service
+      pod-template-hash: 7578d76799
+    name: customers-service-7578d76799-lvsm4
+    namespace: pre-sit
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: customers-service-7578d76799
+      uid: 34670a0f-5481-4a88-99ab-d1263e81f216
+    resourceVersion: "32370"
+    uid: 5fbc1c45-565e-49b4-be3b-752aca16a587
+  spec:
+    containers:
+    - envFrom:
+      - configMapRef:
+          name: petclinic-db-config
+      - secretRef:
+          name: petclinic-db-credentials
+      image: localhost:5000/petclinic-customers-service:v2.2
+      imagePullPolicy: Always
+      name: app
+      ports:
+      - containerPort: 8081
+        protocol: TCP
+      readinessProbe:
+        failureThreshold: 30
+        httpGet:
+          path: /actuator/health
+          port: 8081
+          scheme: HTTP
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 1
+      resources:
+        limits:
+          cpu: "1"
+          memory: 768Mi
+        requests:
+          cpu: 100m
+          memory: 384Mi
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-4xm96
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: presit-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-4xm96
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:05:51Z"
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:05:50Z"
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:06:31Z"
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:06:31Z"
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:05:50Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://f7794da9bc9cbb51fa8378e54af3a0cd2cb930088485cdc907cc1f7755710ece
+      image: localhost:5000/petclinic-customers-service:v2.2
+      imageID: localhost:5000/petclinic-customers-service@sha256:b84a5fcf753e1f9b1aaa77c0dd412f1a61eb86b594a33ff15d222dd9b6ae23b4
+      lastState: {}
+      name: app
+      ready: true
+      restartCount: 0
+      started: true
+      state:
+        running:
+          startedAt: "2026-05-16T11:05:51Z"
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-4xm96
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.2
+    hostIPs:
+    - ip: 172.18.0.2
+    phase: Running
+    podIP: 10.244.0.124
+    podIPs:
+    - ip: 10.244.0.124
+    qosClass: Burstable
+    startTime: "2026-05-16T11:05:50Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-05-16T11:05:44Z"
+    generateName: postgres-
+    labels:
+      app: postgres
+      apps.kubernetes.io/pod-index: "0"
+      controller-revision-hash: postgres-59fb7d47b9
+      statefulset.kubernetes.io/pod-name: postgres-0
+    name: postgres-0
+    namespace: pre-sit
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: StatefulSet
+      name: postgres
+      uid: 29c11797-565e-4c68-82ac-82128f767065
+    resourceVersion: "32132"
+    uid: e2d1bbbf-4e86-4362-b81e-4fcd9dbc6307
+  spec:
+    containers:
+    - env:
+      - name: POSTGRES_DB
+        valueFrom:
+          configMapKeyRef:
+            key: POSTGRES_DB
+            name: petclinic-db-config
+      - name: POSTGRES_USER
+        valueFrom:
+          secretKeyRef:
+            key: POSTGRES_USER
+            name: petclinic-db-credentials
+      - name: POSTGRES_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            key: POSTGRES_PASSWORD
+            name: petclinic-db-credentials
+      - name: PGDATA
+        value: /var/lib/postgresql/data/pgdata
+      image: postgres:16-alpine
+      imagePullPolicy: IfNotPresent
+      name: postgres
+      ports:
+      - containerPort: 5432
+        name: postgres
+        protocol: TCP
+      readinessProbe:
+        exec:
+          command:
+          - pg_isready
+          - -U
+          - petclinic
+          - -d
+          - petclinic
+        failureThreshold: 3
+        initialDelaySeconds: 5
+        periodSeconds: 5
+        successThreshold: 1
+        timeoutSeconds: 1
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 100m
+          memory: 256Mi
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/lib/postgresql/data
+        name: data
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-4kglx
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    hostname: postgres-0
+    nodeName: presit-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    subdomain: postgres
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - emptyDir: {}
+      name: data
+    - name: kube-api-access-4kglx
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:05:45Z"
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:05:44Z"
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:05:50Z"
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:05:50Z"
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:05:44Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://7aea9d32edb04a6ad548f2bd840e8439aadd2ca6c38fc8daa36371a570bbbbaa
+      image: docker.io/library/postgres:16-alpine
+      imageID: docker.io/library/postgres@sha256:890480b08124ce7f79960a9bb16fe39729aa302bd384bfd7c408fee6c8f7adb7
+      lastState: {}
+      name: postgres
+      ready: true
+      restartCount: 0
+      started: true
+      state:
+        running:
+          startedAt: "2026-05-16T11:05:45Z"
+      volumeMounts:
+      - mountPath: /var/lib/postgresql/data
+        name: data
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-4kglx
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.2
+    hostIPs:
+    - ip: 172.18.0.2
+    phase: Running
+    podIP: 10.244.0.121
+    podIPs:
+    - ip: 10.244.0.121
+    qosClass: Burstable
+    startTime: "2026-05-16T11:05:44Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-05-16T11:06:19Z"
+    generateName: presit-phase1-database-
+    labels:
+      app: presit-validation
+      batch.kubernetes.io/controller-uid: 181ef05f-3802-4432-80df-371030231c30
+      batch.kubernetes.io/job-name: presit-phase1-database
+      controller-uid: 181ef05f-3802-4432-80df-371030231c30
+      job-name: presit-phase1-database
+      phase: "1"
+    name: presit-phase1-database-6jhl7
+    namespace: pre-sit
+    ownerReferences:
+    - apiVersion: batch/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Job
+      name: presit-phase1-database
+      uid: 181ef05f-3802-4432-80df-371030231c30
+    resourceVersion: "32366"
+    uid: 533f4d9f-ed47-49e4-9dd3-9221ad2d7d4d
+  spec:
+    containers:
+    - command:
+      - sh
+      - -c
+      - |
+        mvn test -P phase-1 -q ; RC=$?
+        mkdir -p /reports/phase-1 && cp -r reports/. /reports/phase-1/ 2>/dev/null || true
+        exit $RC
+      env:
+      - name: DB_HOST
+        value: postgres
+      - name: DB_PORT
+        value: "5432"
+      - name: DB_NAME
+        value: petclinic
+      - name: DB_USER
+        valueFrom:
+          secretKeyRef:
+            key: POSTGRES_USER
+            name: petclinic-db-credentials
+      - name: DB_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            key: POSTGRES_PASSWORD
+            name: petclinic-db-credentials
+      - name: GATEWAY_URL
+        value: http://api-gateway:8080
+      - name: REPORT_DIR
+        value: /reports
+      image: localhost:5000/presit-bdd-runner:v2.2
+      imagePullPolicy: Always
+      name: bdd-runner
+      resources:
+        limits:
+          cpu: "1"
+          memory: 768Mi
+        requests:
+          cpu: 200m
+          memory: 384Mi
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /reports
+        name: reports
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-xmr2m
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    initContainers:
+    - command:
+      - sh
+      - -c
+      - until nc -z postgres 5432; do sleep 2; done
+      image: busybox:1.36
+      imagePullPolicy: IfNotPresent
+      name: wait-for-db
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-xmr2m
+        readOnly: true
+    nodeName: presit-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Never
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: presit-sa
+    serviceAccountName: presit-sa
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: reports
+      persistentVolumeClaim:
+        claimName: presit-reports
+    - name: kube-api-access-xmr2m
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:06:30Z"
+      status: "False"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:06:20Z"
+      reason: PodCompleted
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:06:29Z"
+      reason: PodCompleted
+      status: "False"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:06:29Z"
+      reason: PodCompleted
+      status: "False"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:06:19Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://6d9e3ab1f3bfa719474bf02b80bfda14eaf54b8ed5e64350421c57aa7aae9ed6
+      image: localhost:5000/presit-bdd-runner:v2.2
+      imageID: localhost:5000/presit-bdd-runner@sha256:9f65cca492704ad64a392742a470ce8632323eed2143afaff691f2b93dc11c5a
+      lastState: {}
+      name: bdd-runner
+      ready: false
+      restartCount: 0
+      started: false
+      state:
+        terminated:
+          containerID: containerd://6d9e3ab1f3bfa719474bf02b80bfda14eaf54b8ed5e64350421c57aa7aae9ed6
+          exitCode: 0
+          finishedAt: "2026-05-16T11:06:28Z"
+          reason: Completed
+          startedAt: "2026-05-16T11:06:20Z"
+      volumeMounts:
+      - mountPath: /reports
+        name: reports
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-xmr2m
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.2
+    hostIPs:
+    - ip: 172.18.0.2
+    initContainerStatuses:
+    - containerID: containerd://05107f9cc2189e038fc0bba2bab80d6ea267e500affd0040fc1df63a0d61ee8d
+      image: docker.io/library/busybox:1.36
+      imageID: docker.io/library/busybox@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662
+      lastState: {}
+      name: wait-for-db
+      ready: true
+      restartCount: 0
+      started: false
+      state:
+        terminated:
+          containerID: containerd://05107f9cc2189e038fc0bba2bab80d6ea267e500affd0040fc1df63a0d61ee8d
+          exitCode: 0
+          finishedAt: "2026-05-16T11:06:19Z"
+          reason: Completed
+          startedAt: "2026-05-16T11:06:19Z"
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-xmr2m
+        readOnly: true
+        recursiveReadOnly: Disabled
+    phase: Succeeded
+    podIP: 10.244.0.130
+    podIPs:
+    - ip: 10.244.0.130
+    qosClass: Burstable
+    startTime: "2026-05-16T11:06:19Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-05-16T11:05:51Z"
+    generateName: presit-phase1-database-
+    labels:
+      app: presit-validation
+      batch.kubernetes.io/controller-uid: 181ef05f-3802-4432-80df-371030231c30
+      batch.kubernetes.io/job-name: presit-phase1-database
+      controller-uid: 181ef05f-3802-4432-80df-371030231c30
+      job-name: presit-phase1-database
+      phase: "1"
+    name: presit-phase1-database-sflwv
+    namespace: pre-sit
+    ownerReferences:
+    - apiVersion: batch/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Job
+      name: presit-phase1-database
+      uid: 181ef05f-3802-4432-80df-371030231c30
+    resourceVersion: "32313"
+    uid: ad86cefd-4db8-4b31-aab7-e684ad31868d
+  spec:
+    containers:
+    - command:
+      - sh
+      - -c
+      - |
+        mvn test -P phase-1 -q ; RC=$?
+        mkdir -p /reports/phase-1 && cp -r reports/. /reports/phase-1/ 2>/dev/null || true
+        exit $RC
+      env:
+      - name: DB_HOST
+        value: postgres
+      - name: DB_PORT
+        value: "5432"
+      - name: DB_NAME
+        value: petclinic
+      - name: DB_USER
+        valueFrom:
+          secretKeyRef:
+            key: POSTGRES_USER
+            name: petclinic-db-credentials
+      - name: DB_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            key: POSTGRES_PASSWORD
+            name: petclinic-db-credentials
+      - name: GATEWAY_URL
+        value: http://api-gateway:8080
+      - name: REPORT_DIR
+        value: /reports
+      image: localhost:5000/presit-bdd-runner:v2.2
+      imagePullPolicy: Always
+      name: bdd-runner
+      resources:
+        limits:
+          cpu: "1"
+          memory: 768Mi
+        requests:
+          cpu: 200m
+          memory: 384Mi
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /reports
+        name: reports
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-2xk6p
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    initContainers:
+    - command:
+      - sh
+      - -c
+      - until nc -z postgres 5432; do sleep 2; done
+      image: busybox:1.36
+      imagePullPolicy: IfNotPresent
+      name: wait-for-db
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-2xk6p
+        readOnly: true
+    nodeName: presit-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Never
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: presit-sa
+    serviceAccountName: presit-sa
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: reports
+      persistentVolumeClaim:
+        claimName: presit-reports
+    - name: kube-api-access-2xk6p
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:06:11Z"
+      status: "False"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:05:54Z"
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:06:10Z"
+      reason: PodFailed
+      status: "False"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:06:10Z"
+      reason: PodFailed
+      status: "False"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:05:54Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://548a19f753a33e5101b6527265c2a6c9f9ad07a41e282674516b2506aae80cc8
+      image: localhost:5000/presit-bdd-runner:v2.2
+      imageID: localhost:5000/presit-bdd-runner@sha256:9f65cca492704ad64a392742a470ce8632323eed2143afaff691f2b93dc11c5a
+      lastState: {}
+      name: bdd-runner
+      ready: false
+      restartCount: 0
+      started: false
+      state:
+        terminated:
+          containerID: containerd://548a19f753a33e5101b6527265c2a6c9f9ad07a41e282674516b2506aae80cc8
+          exitCode: 1
+          finishedAt: "2026-05-16T11:06:09Z"
+          reason: Error
+          startedAt: "2026-05-16T11:05:58Z"
+      volumeMounts:
+      - mountPath: /reports
+        name: reports
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-2xk6p
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.2
+    hostIPs:
+    - ip: 172.18.0.2
+    initContainerStatuses:
+    - containerID: containerd://0db1f1d0d3ec7f450f0dadde6d2de446e07980649b5c1592f63bbdb6deaf1351
+      image: docker.io/library/busybox:1.36
+      imageID: docker.io/library/busybox@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662
+      lastState: {}
+      name: wait-for-db
+      ready: true
+      restartCount: 0
+      started: false
+      state:
+        terminated:
+          containerID: containerd://0db1f1d0d3ec7f450f0dadde6d2de446e07980649b5c1592f63bbdb6deaf1351
+          exitCode: 0
+          finishedAt: "2026-05-16T11:05:54Z"
+          reason: Completed
+          startedAt: "2026-05-16T11:05:54Z"
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-2xk6p
+        readOnly: true
+        recursiveReadOnly: Disabled
+    phase: Failed
+    podIP: 10.244.0.127
+    podIPs:
+    - ip: 10.244.0.127
+    qosClass: Burstable
+    startTime: "2026-05-16T11:05:54Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-05-16T11:05:51Z"
+    generateName: presit-phase2-application-
+    labels:
+      app: presit-validation
+      batch.kubernetes.io/controller-uid: b859ec15-b5b5-44cb-933e-7606afc86973
+      batch.kubernetes.io/job-name: presit-phase2-application
+      controller-uid: b859ec15-b5b5-44cb-933e-7606afc86973
+      job-name: presit-phase2-application
+      phase: "2"
+    name: presit-phase2-application-8k9h9
+    namespace: pre-sit
+    ownerReferences:
+    - apiVersion: batch/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Job
+      name: presit-phase2-application
+      uid: b859ec15-b5b5-44cb-933e-7606afc86973
+    resourceVersion: "32478"
+    uid: d084b12d-0c85-4e73-92d7-0ffb39851c53
+  spec:
+    containers:
+    - command:
+      - sh
+      - -c
+      - |
+        mvn test -P phase-2 -q ; RC=$?
+        mkdir -p /reports/phase-2 && cp -r reports/. /reports/phase-2/ 2>/dev/null || true
+        exit $RC
+      env:
+      - name: DB_HOST
+        value: postgres
+      - name: DB_PORT
+        value: "5432"
+      - name: DB_NAME
+        value: petclinic
+      - name: DB_USER
+        valueFrom:
+          secretKeyRef:
+            key: POSTGRES_USER
+            name: petclinic-db-credentials
+      - name: DB_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            key: POSTGRES_PASSWORD
+            name: petclinic-db-credentials
+      - name: GATEWAY_URL
+        value: http://api-gateway:8080
+      - name: REPORT_DIR
+        value: /reports
+      image: localhost:5000/presit-bdd-runner:v2.2
+      imagePullPolicy: Always
+      name: bdd-runner
+      resources:
+        limits:
+          cpu: "1"
+          memory: 768Mi
+        requests:
+          cpu: 200m
+          memory: 384Mi
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /reports
+        name: reports
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-2lvf4
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    initContainers:
+    - command:
+      - sh
+      - -c
+      - kubectl wait --for=condition=complete job/presit-phase1-database -n pre-sit
+        --timeout=300s || true
+      image: bitnami/kubectl:latest
+      imagePullPolicy: Always
+      name: wait-for-phase1
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-2lvf4
+        readOnly: true
+    - command:
+      - sh
+      - -c
+      - |
+        for svc in customers-service vets-service visits-service api-gateway; do
+          kubectl wait --for=condition=Ready pod -l app=$svc -n pre-sit --timeout=300s
+        done
+      image: bitnami/kubectl:latest
+      imagePullPolicy: Always
+      name: wait-for-apps
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-2lvf4
+        readOnly: true
+    nodeName: presit-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Never
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: presit-sa
+    serviceAccountName: presit-sa
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: reports
+      persistentVolumeClaim:
+        claimName: presit-reports
+    - name: kube-api-access-2lvf4
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:06:52Z"
+      status: "False"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:06:35Z"
+      reason: PodCompleted
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:06:51Z"
+      reason: PodCompleted
+      status: "False"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:06:51Z"
+      reason: PodCompleted
+      status: "False"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:05:53Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://11b394a78ea895ba15240404c922a62c3d14fc4f60bf29c8031bbe9eb20eadf1
+      image: localhost:5000/presit-bdd-runner:v2.2
+      imageID: localhost:5000/presit-bdd-runner@sha256:9f65cca492704ad64a392742a470ce8632323eed2143afaff691f2b93dc11c5a
+      lastState: {}
+      name: bdd-runner
+      ready: false
+      restartCount: 0
+      started: false
+      state:
+        terminated:
+          containerID: containerd://11b394a78ea895ba15240404c922a62c3d14fc4f60bf29c8031bbe9eb20eadf1
+          exitCode: 0
+          finishedAt: "2026-05-16T11:06:50Z"
+          reason: Completed
+          startedAt: "2026-05-16T11:06:35Z"
+      volumeMounts:
+      - mountPath: /reports
+        name: reports
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-2lvf4
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.2
+    hostIPs:
+    - ip: 172.18.0.2
+    initContainerStatuses:
+    - containerID: containerd://59c4940335cfc58072e5785a3a4eb3fdbbfa4aee5ab6a2f4f3e963811a7a2e43
+      image: docker.io/bitnami/kubectl:latest
+      imageID: docker.io/bitnami/kubectl@sha256:e2b97dde9666986c61c56d49aae85a714b89b69392baa531438e74ec34096fb4
+      lastState: {}
+      name: wait-for-phase1
+      ready: true
+      restartCount: 0
+      started: false
+      state:
+        terminated:
+          containerID: containerd://59c4940335cfc58072e5785a3a4eb3fdbbfa4aee5ab6a2f4f3e963811a7a2e43
+          exitCode: 0
+          finishedAt: "2026-05-16T11:06:31Z"
+          reason: Completed
+          startedAt: "2026-05-16T11:05:55Z"
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-2lvf4
+        readOnly: true
+        recursiveReadOnly: Disabled
+    - containerID: containerd://20525edd2bcfbbd03161d737f4b420bb658d329f544068fe81517c567be21b5d
+      image: docker.io/bitnami/kubectl:latest
+      imageID: docker.io/bitnami/kubectl@sha256:e2b97dde9666986c61c56d49aae85a714b89b69392baa531438e74ec34096fb4
+      lastState: {}
+      name: wait-for-apps
+      ready: true
+      restartCount: 0
+      started: false
+      state:
+        terminated:
+          containerID: containerd://20525edd2bcfbbd03161d737f4b420bb658d329f544068fe81517c567be21b5d
+          exitCode: 0
+          finishedAt: "2026-05-16T11:06:34Z"
+          reason: Completed
+          startedAt: "2026-05-16T11:06:33Z"
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-2lvf4
+        readOnly: true
+        recursiveReadOnly: Disabled
+    phase: Succeeded
+    podIP: 10.244.0.126
+    podIPs:
+    - ip: 10.244.0.126
+    qosClass: Burstable
+    startTime: "2026-05-16T11:05:53Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-05-16T11:05:51Z"
+    generateName: presit-phase3-integration-
+    labels:
+      app: presit-validation
+      batch.kubernetes.io/controller-uid: 86f1bd6f-3434-4c89-bd9f-82140ec573b6
+      batch.kubernetes.io/job-name: presit-phase3-integration
+      controller-uid: 86f1bd6f-3434-4c89-bd9f-82140ec573b6
+      job-name: presit-phase3-integration
+      phase: "3"
+    name: presit-phase3-integration-n2b4x
+    namespace: pre-sit
+    ownerReferences:
+    - apiVersion: batch/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Job
+      name: presit-phase3-integration
+      uid: 86f1bd6f-3434-4c89-bd9f-82140ec573b6
+    resourceVersion: "32518"
+    uid: 7a36a327-595d-40a0-9cdf-b6e4ab3951e2
+  spec:
+    containers:
+    - command:
+      - sh
+      - -c
+      - |
+        mvn test -P phase-3 -q ; RC=$?
+        mkdir -p /reports/phase-3 && cp -r reports/. /reports/phase-3/ 2>/dev/null || true
+        exit $RC
+      env:
+      - name: DB_HOST
+        value: postgres
+      - name: DB_PORT
+        value: "5432"
+      - name: DB_NAME
+        value: petclinic
+      - name: DB_USER
+        valueFrom:
+          secretKeyRef:
+            key: POSTGRES_USER
+            name: petclinic-db-credentials
+      - name: DB_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            key: POSTGRES_PASSWORD
+            name: petclinic-db-credentials
+      - name: GATEWAY_URL
+        value: http://api-gateway:8080
+      - name: REPORT_DIR
+        value: /reports
+      image: localhost:5000/presit-bdd-runner:v2.2
+      imagePullPolicy: Always
+      name: bdd-runner
+      resources:
+        limits:
+          cpu: "1"
+          memory: 768Mi
+        requests:
+          cpu: 200m
+          memory: 384Mi
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /reports
+        name: reports
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-wgr5n
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    initContainers:
+    - command:
+      - sh
+      - -c
+      - kubectl wait --for=condition=complete job/presit-phase2-application -n pre-sit
+        --timeout=600s || true
+      image: bitnami/kubectl:latest
+      imagePullPolicy: Always
+      name: wait-for-phase2
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-wgr5n
+        readOnly: true
+    nodeName: presit-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Never
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: presit-sa
+    serviceAccountName: presit-sa
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: reports
+      persistentVolumeClaim:
+        claimName: presit-reports
+    - name: kube-api-access-wgr5n
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:07:10Z"
+      status: "False"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:06:54Z"
+      reason: PodCompleted
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:07:09Z"
+      reason: PodCompleted
+      status: "False"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:07:09Z"
+      reason: PodCompleted
+      status: "False"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:05:54Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://45d6fbe22edce1eaf07c931921e566804d5aeaacac83dabd44c4f3e98c70aedd
+      image: localhost:5000/presit-bdd-runner:v2.2
+      imageID: localhost:5000/presit-bdd-runner@sha256:9f65cca492704ad64a392742a470ce8632323eed2143afaff691f2b93dc11c5a
+      lastState: {}
+      name: bdd-runner
+      ready: false
+      restartCount: 0
+      started: false
+      state:
+        terminated:
+          containerID: containerd://45d6fbe22edce1eaf07c931921e566804d5aeaacac83dabd44c4f3e98c70aedd
+          exitCode: 0
+          finishedAt: "2026-05-16T11:07:09Z"
+          reason: Completed
+          startedAt: "2026-05-16T11:06:54Z"
+      volumeMounts:
+      - mountPath: /reports
+        name: reports
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-wgr5n
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.2
+    hostIPs:
+    - ip: 172.18.0.2
+    initContainerStatuses:
+    - containerID: containerd://a01e9ea715843f49ae87bad388c0a1bd01c44b58848471da89e932522397f601
+      image: docker.io/bitnami/kubectl:latest
+      imageID: docker.io/bitnami/kubectl@sha256:e2b97dde9666986c61c56d49aae85a714b89b69392baa531438e74ec34096fb4
+      lastState: {}
+      name: wait-for-phase2
+      ready: true
+      restartCount: 0
+      started: false
+      state:
+        terminated:
+          containerID: containerd://a01e9ea715843f49ae87bad388c0a1bd01c44b58848471da89e932522397f601
+          exitCode: 0
+          finishedAt: "2026-05-16T11:06:53Z"
+          reason: Completed
+          startedAt: "2026-05-16T11:05:56Z"
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-wgr5n
+        readOnly: true
+        recursiveReadOnly: Disabled
+    phase: Succeeded
+    podIP: 10.244.0.128
+    podIPs:
+    - ip: 10.244.0.128
+    qosClass: Burstable
+    startTime: "2026-05-16T11:05:54Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: "2026-05-16T11:05:51Z"
+    generateName: presit-phase4-e2e-decision-
+    labels:
+      app: presit-validation
+      batch.kubernetes.io/controller-uid: 69a944ff-cb76-4540-acc7-5e39002030bb
+      batch.kubernetes.io/job-name: presit-phase4-e2e-decision
+      controller-uid: 69a944ff-cb76-4540-acc7-5e39002030bb
+      job-name: presit-phase4-e2e-decision
+      phase: "4"
+    name: presit-phase4-e2e-decision-ct8v4
+    namespace: pre-sit
+    ownerReferences:
+    - apiVersion: batch/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Job
+      name: presit-phase4-e2e-decision
+      uid: 69a944ff-cb76-4540-acc7-5e39002030bb
+    resourceVersion: "32600"
+    uid: 51b25ef3-d991-4d2e-80b6-9d00b10fc21b
+  spec:
+    containers:
+    - command:
+      - sh
+      - -c
+      - |
+        mvn test -P phase-4 -q ; RC=$?
+        mkdir -p /reports/phase-4 && cp -r reports/. /reports/phase-4/ 2>/dev/null || true
+        if [ -f /reports/presit-decision.json ]; then
+          echo '==== Pre-SIT Decision ===='
+          cat /reports/presit-decision.json
+        fi
+        exit $RC
+      env:
+      - name: DB_HOST
+        value: postgres
+      - name: DB_PORT
+        value: "5432"
+      - name: DB_NAME
+        value: petclinic
+      - name: DB_USER
+        valueFrom:
+          secretKeyRef:
+            key: POSTGRES_USER
+            name: petclinic-db-credentials
+      - name: DB_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            key: POSTGRES_PASSWORD
+            name: petclinic-db-credentials
+      - name: GATEWAY_URL
+        value: http://api-gateway:8080
+      - name: REPORT_DIR
+        value: /reports
+      image: localhost:5000/presit-bdd-runner:v2.2
+      imagePullPolicy: Always
+      name: bdd-runner
+      resources:
+        limits:
+          cpu: "2"
+          memory: 1Gi
+        requests:
+          cpu: 200m
+          memory: 512Mi
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /reports
+        name: reports
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-lpn5z
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    initContainers:
+    - command:
+      - sh
+      - -c
+      - kubectl wait --for=condition=complete job/presit-phase3-integration -n pre-sit
+        --timeout=900s || true
+      image: bitnami/kubectl:latest
+      imagePullPolicy: Always
+      name: wait-for-phase3
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-lpn5z
+        readOnly: true
+    nodeName: presit-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Never
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: presit-sa
+    serviceAccountName: presit-sa
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: reports
+      persistentVolumeClaim:
+        claimName: presit-reports
+    - name: kube-api-access-lpn5z
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:07:58Z"
+      status: "False"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:07:12Z"
+      reason: PodCompleted
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:07:57Z"
+      reason: PodCompleted
+      status: "False"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:07:57Z"
+      reason: PodCompleted
+      status: "False"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:05:54Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://f324ad579f2136c2aaf18cd978fdb6f6bae8e043dade7a11f7b9aa6e84cc586b
+      image: localhost:5000/presit-bdd-runner:v2.2
+      imageID: localhost:5000/presit-bdd-runner@sha256:9f65cca492704ad64a392742a470ce8632323eed2143afaff691f2b93dc11c5a
+      lastState: {}
+      name: bdd-runner
+      ready: false
+      restartCount: 0
+      started: false
+      state:
+        terminated:
+          containerID: containerd://f324ad579f2136c2aaf18cd978fdb6f6bae8e043dade7a11f7b9aa6e84cc586b
+          exitCode: 0
+          finishedAt: "2026-05-16T11:07:56Z"
+          reason: Completed
+          startedAt: "2026-05-16T11:07:12Z"
+      volumeMounts:
+      - mountPath: /reports
+        name: reports
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-lpn5z
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.2
+    hostIPs:
+    - ip: 172.18.0.2
+    initContainerStatuses:
+    - containerID: containerd://fd4063bd70352e751e31ef18f565158a6f83b28e15cf81fd94f1ec27e789c6d8
+      image: docker.io/bitnami/kubectl:latest
+      imageID: docker.io/bitnami/kubectl@sha256:e2b97dde9666986c61c56d49aae85a714b89b69392baa531438e74ec34096fb4
+      lastState: {}
+      name: wait-for-phase3
+      ready: true
+      restartCount: 0
+      started: false
+      state:
+        terminated:
+          containerID: containerd://fd4063bd70352e751e31ef18f565158a6f83b28e15cf81fd94f1ec27e789c6d8
+          exitCode: 0
+          finishedAt: "2026-05-16T11:07:11Z"
+          reason: Completed
+          startedAt: "2026-05-16T11:05:58Z"
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-lpn5z
+        readOnly: true
+        recursiveReadOnly: Disabled
+    phase: Succeeded
+    podIP: 10.244.0.129
+    podIPs:
+    - ip: 10.244.0.129
+    qosClass: Burstable
+    startTime: "2026-05-16T11:05:54Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/restartedAt: "2026-05-16T19:05:50+08:00"
+    creationTimestamp: "2026-05-16T11:05:50Z"
+    generateName: vets-service-585f6b6bd7-
+    labels:
+      app: vets-service
+      pod-template-hash: 585f6b6bd7
+    name: vets-service-585f6b6bd7-mrpq8
+    namespace: pre-sit
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: vets-service-585f6b6bd7
+      uid: 1a59972a-27fc-4218-82d3-a144d22afa45
+    resourceVersion: "32375"
+    uid: 80365b6f-55da-4489-b554-18d2ac2e5587
+  spec:
+    containers:
+    - envFrom:
+      - configMapRef:
+          name: petclinic-db-config
+      - secretRef:
+          name: petclinic-db-credentials
+      image: localhost:5000/petclinic-vets-service:v2.2
+      imagePullPolicy: Always
+      name: app
+      ports:
+      - containerPort: 8083
+        protocol: TCP
+      readinessProbe:
+        failureThreshold: 30
+        httpGet:
+          path: /actuator/health
+          port: 8083
+          scheme: HTTP
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 1
+      resources:
+        limits:
+          cpu: "1"
+          memory: 768Mi
+        requests:
+          cpu: 100m
+          memory: 384Mi
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-kznrd
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: presit-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-kznrd
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:05:51Z"
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:05:50Z"
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:06:31Z"
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:06:31Z"
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:05:50Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://b243a8ffc48c551faf4fd05d0d6b047dda9dd27fa350fa9c9dec06fe927bbf92
+      image: localhost:5000/petclinic-vets-service:sit-approved
+      imageID: localhost:5000/petclinic-vets-service@sha256:0afbb4654c8397c14e8269de0016abaad8d5798bbda5985f32bbcd49e282662d
+      lastState: {}
+      name: app
+      ready: true
+      restartCount: 0
+      started: true
+      state:
+        running:
+          startedAt: "2026-05-16T11:05:51Z"
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-kznrd
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.2
+    hostIPs:
+    - ip: 172.18.0.2
+    phase: Running
+    podIP: 10.244.0.122
+    podIPs:
+    - ip: 10.244.0.122
+    qosClass: Burstable
+    startTime: "2026-05-16T11:05:50Z"
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/restartedAt: "2026-05-16T19:05:50+08:00"
+    creationTimestamp: "2026-05-16T11:05:50Z"
+    generateName: visits-service-67cbd5788c-
+    labels:
+      app: visits-service
+      pod-template-hash: 67cbd5788c
+    name: visits-service-67cbd5788c-xcjk9
+    namespace: pre-sit
+    ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: visits-service-67cbd5788c
+      uid: 619ec4f8-aed1-4e36-b7a6-02729cf50190
+    resourceVersion: "32400"
+    uid: f807699d-072f-461d-99ca-966f336dbf2b
+  spec:
+    containers:
+    - envFrom:
+      - configMapRef:
+          name: petclinic-db-config
+      - secretRef:
+          name: petclinic-db-credentials
+      image: localhost:5000/petclinic-visits-service:v2.2
+      imagePullPolicy: Always
+      name: app
+      ports:
+      - containerPort: 8082
+        protocol: TCP
+      readinessProbe:
+        failureThreshold: 30
+        httpGet:
+          path: /actuator/health
+          port: 8082
+          scheme: HTTP
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 1
+      resources:
+        limits:
+          cpu: "1"
+          memory: 768Mi
+        requests:
+          cpu: 100m
+          memory: 384Mi
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-tlm4j
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: true
+    nodeName: presit-control-plane
+    preemptionPolicy: PreemptLowerPriority
+    priority: 0
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: kube-api-access-tlm4j
+      projected:
+        defaultMode: 420
+        sources:
+        - serviceAccountToken:
+            expirationSeconds: 3607
+            path: token
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:05:51Z"
+      status: "True"
+      type: PodReadyToStartContainers
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:05:50Z"
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:06:31Z"
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:06:31Z"
+      status: "True"
+      type: ContainersReady
+    - lastProbeTime: null
+      lastTransitionTime: "2026-05-16T11:05:50Z"
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: containerd://a0cb954506dc64bef4fa5c865c093bfd08ea8004ad0974521501550df9917b74
+      image: localhost:5000/petclinic-visits-service:sit-approved
+      imageID: localhost:5000/petclinic-visits-service@sha256:81cdcb25c37b948ab1778b73df520761fe4b6ce69321d3caa3762d4189866838
+      lastState: {}
+      name: app
+      ready: true
+      restartCount: 0
+      started: true
+      state:
+        running:
+          startedAt: "2026-05-16T11:05:51Z"
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-tlm4j
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 172.18.0.2
+    hostIPs:
+    - ip: 172.18.0.2
+    phase: Running
+    podIP: 10.244.0.123
+    podIPs:
+    - ip: 10.244.0.123
+    qosClass: Burstable
+    startTime: "2026-05-16T11:05:50Z"
+kind: List
+metadata:
+  resourceVersion: ""

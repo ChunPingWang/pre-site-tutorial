@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="Cucumber" time="4.413" tests="12" skipped="0" failures="0" errors="0">
+<testcase classname="Pre-SIT 功能與集成驗證" name="查詢所有 Owner 列表" time="0.763">
+<system-out><![CDATA[
+假設Phase 1 數據庫層驗證已通過.........................................................passed
+並且Phase 2 應用層驗證已通過..........................................................passed
+並且API Gateway 可透過 "http://api-gateway.pre-sit.svc:8080" 存取..................passed
+當我對 "/api/customer/owners" 發送 GET 請求........................................passed
+那麼HTTP 狀態碼應為 200............................................................passed
+並且回應應為 JSON 陣列..............................................................passed
+並且陣列長度應大於 0.................................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 功能與集成驗證" name="根據 ID 查詢單一 Owner" time="0.248">
+<system-out><![CDATA[
+假設Phase 1 數據庫層驗證已通過.........................................................passed
+並且Phase 2 應用層驗證已通過..........................................................passed
+並且API Gateway 可透過 "http://api-gateway.pre-sit.svc:8080" 存取..................passed
+假設已知 Owner ID 為 1...........................................................passed
+當我對 "/api/customer/owners/1" 發送 GET 請求......................................passed
+那麼HTTP 狀態碼應為 200............................................................passed
+並且回應 JSON 應包含:..............................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 功能與集成驗證" name="新增 Owner 並驗證寫入數據庫" time="0.393">
+<system-out><![CDATA[
+假設Phase 1 數據庫層驗證已通過.........................................................passed
+並且Phase 2 應用層驗證已通過..........................................................passed
+並且API Gateway 可透過 "http://api-gateway.pre-sit.svc:8080" 存取..................passed
+當我對 "/api/customer/owners" 發送 POST 請求，Body 為:...............................passed
+那麼HTTP 狀態碼應為 201............................................................passed
+並且回應 JSON 的 "id" 欄位應大於 0....................................................passed
+當我以回應的 ID 對 "/api/customer/owners/{id}" 發送 GET 請求...........................passed
+那麼回應 JSON 的 "firstName" 應為 "PreSIT".........................................passed
+並且回應 JSON 的 "city" 應為 "Taipei"..............................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 功能與集成驗證" name="更新 Owner 資訊" time="0.191">
+<system-out><![CDATA[
+假設Phase 1 數據庫層驗證已通過.........................................................passed
+並且Phase 2 應用層驗證已通過..........................................................passed
+並且API Gateway 可透過 "http://api-gateway.pre-sit.svc:8080" 存取..................passed
+假設已知 Owner ID 為 1...........................................................passed
+當我對 "/api/customer/owners/1" 發送 PUT 請求，Body 為:..............................passed
+那麼HTTP 狀態碼應為 204............................................................passed
+當我對 "/api/customer/owners/1" 發送 GET 請求......................................passed
+那麼回應 JSON 的 "address" 應為 "Updated Address 999"..............................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 功能與集成驗證" name="為 Owner 新增一隻 Pet" time="0.326">
+<system-out><![CDATA[
+假設Phase 1 數據庫層驗證已通過.........................................................passed
+並且Phase 2 應用層驗證已通過..........................................................passed
+並且API Gateway 可透過 "http://api-gateway.pre-sit.svc:8080" 存取..................passed
+假設已知 Owner ID 為 1...........................................................passed
+當我對 "/api/customer/owners/1/pets" 發送 POST 請求，Body 為:........................passed
+那麼HTTP 狀態碼應為 201............................................................passed
+當我對 "/api/customer/owners/1" 發送 GET 請求......................................passed
+那麼回應 JSON 的 "pets" 陣列中應包含 name 為 "TestDog" 的記錄..............................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 功能與集成驗證" name="查詢 Pet 的 Type 清單" time="0.088">
+<system-out><![CDATA[
+假設Phase 1 數據庫層驗證已通過.........................................................passed
+並且Phase 2 應用層驗證已通過..........................................................passed
+並且API Gateway 可透過 "http://api-gateway.pre-sit.svc:8080" 存取..................passed
+當我對 "/api/customer/petTypes" 發送 GET 請求......................................passed
+那麼HTTP 狀態碼應為 200............................................................passed
+並且回應陣列應包含以下 name:...........................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 功能與集成驗證" name="建立就診記錄（涉及 visits-service 與 customers-service）" time="1.133">
+<system-out><![CDATA[
+假設Phase 1 數據庫層驗證已通過.........................................................passed
+並且Phase 2 應用層驗證已通過..........................................................passed
+並且API Gateway 可透過 "http://api-gateway.pre-sit.svc:8080" 存取..................passed
+假設已知 Owner ID 為 1 且 Pet ID 為 1..............................................passed
+當我對 "/api/visit/owners/1/pets/1/visits" 發送 POST 請求，Body 為:..................passed
+那麼HTTP 狀態碼應為 201............................................................passed
+當我對 "/api/customer/owners/1" 發送 GET 請求......................................passed
+那麼Owner 的第一隻 Pet 的 visits 中應包含 description 為 "Pre-SIT automated test visit" 的記錄.passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 功能與集成驗證" name="查詢獸醫列表並包含專長" time="0.202">
+<system-out><![CDATA[
+假設Phase 1 數據庫層驗證已通過.........................................................passed
+並且Phase 2 應用層驗證已通過..........................................................passed
+並且API Gateway 可透過 "http://api-gateway.pre-sit.svc:8080" 存取..................passed
+當我對 "/api/vet/vets" 發送 GET 請求...............................................passed
+那麼HTTP 狀態碼應為 200............................................................passed
+並且回應陣列長度應大於 0...............................................................passed
+並且至少一位獸醫應擁有 specialties 資料..................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 功能與集成驗證" name="查詢不存在的 Owner 應返回 404" time="0.036">
+<system-out><![CDATA[
+假設Phase 1 數據庫層驗證已通過.........................................................passed
+並且Phase 2 應用層驗證已通過..........................................................passed
+並且API Gateway 可透過 "http://api-gateway.pre-sit.svc:8080" 存取..................passed
+當我對 "/api/customer/owners/99999" 發送 GET 請求..................................passed
+那麼HTTP 狀態碼應為 404............................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 功能與集成驗證" name="新增 Owner 缺少必填欄位應返回錯誤" time="0.071">
+<system-out><![CDATA[
+假設Phase 1 數據庫層驗證已通過.........................................................passed
+並且Phase 2 應用層驗證已通過..........................................................passed
+並且API Gateway 可透過 "http://api-gateway.pre-sit.svc:8080" 存取..................passed
+當我對 "/api/customer/owners" 發送 POST 請求，Body 為:...............................passed
+那麼HTTP 狀態碼應為 400 或 422......................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 功能與集成驗證" name="欄位超過最大長度應返回錯誤" time="0.039">
+<system-out><![CDATA[
+假設Phase 1 數據庫層驗證已通過.........................................................passed
+並且Phase 2 應用層驗證已通過..........................................................passed
+並且API Gateway 可透過 "http://api-gateway.pre-sit.svc:8080" 存取..................passed
+當我對 "/api/customer/owners" 發送 POST 請求，Body 為:...............................passed
+那麼HTTP 狀態碼不應為 200 或 201.....................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 功能與集成驗證" name="清理本次測試產生的數據" time="0.194">
+<system-out><![CDATA[
+假設Phase 1 數據庫層驗證已通過.........................................................passed
+並且Phase 2 應用層驗證已通過..........................................................passed
+並且API Gateway 可透過 "http://api-gateway.pre-sit.svc:8080" 存取..................passed
+當我刪除所有 firstName 為 "PreSIT" 的 Owner 記錄......................................passed
+並且我刪除所有 description 包含 "Pre-SIT automated" 的 Visit 記錄.......................passed
+那麼清理操作應全部成功.................................................................passed
+並且數據庫狀態應恢復至測試前..............................................................passed
+]]></system-out>
+</testcase>
+</testsuite>

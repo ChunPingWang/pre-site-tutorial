@@ -1,0 +1,9 @@
+           List of schemas
+       Name       |       Owner       
+------------------+-------------------
+ customers_schema | petclinic
+ public           | pg_database_owner
+ vets_schema      | petclinic
+ visits_schema    | petclinic
+(4 rows)
+

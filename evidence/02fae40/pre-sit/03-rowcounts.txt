@@ -1,0 +1,10 @@
+        t         | count 
+------------------+-------
+ customers.owners |    12
+ customers.pets   |    15
+ customers.types  |     6
+ vets.specialties |     3
+ vets.vets        |     6
+ visits.visits    |     6
+(6 rows)
+

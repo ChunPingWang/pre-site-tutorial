@@ -74,12 +74,15 @@
     並且 Pod 不應發生 OOMKilled 或 CrashLoopBackOff
 
   # ─── ArgoCD 部署狀態驗證 ────────────────────────
+  # v2.2 注意: query petclinic-sit (AutoSync 那個) 而非 petclinic-pre-sit
+  # 原因: pre-sit app 管轄 BDD Job 自身; Phase 4 跑時 job 正 reconcile，
+  #       自我 query 永遠看到 OutOfSync (循環依賴)。
   @argocd @gitops
   場景: ArgoCD 應用同步狀態正常
-    當 我查詢 ArgoCD 應用 "petclinic-pre-sit" 的狀態
+    當 我查詢 ArgoCD 應用 "petclinic-sit" 的狀態
     那麼 同步狀態 (Sync Status) 應為 "Synced"
     並且 健康狀態 (Health Status) 應為 "Healthy"
-    並且 所有資源的同步結果應為 "SyncOK"
+    並且 所有資源的同步結果應為 "Synced"
 
   # ─── Go/No-Go 決策門檻 ─────────────────────────
   @decision @go-nogo @critical

@@ -1,0 +1,364 @@
+LAST SEEN   TYPE      REASON                  OBJECT                                    MESSAGE
+4m16s       Normal    SuccessfulCreate        statefulset/postgres                      create Pod postgres-0 in StatefulSet postgres successful
+51m         Normal    SuccessfulCreate        job/presit-phase3-integration             Created pod: presit-phase3-integration-g6z57
+51m         Normal    Provisioning            persistentvolumeclaim/presit-reports      External provisioner is provisioning volume for claim "pre-sit/presit-reports"
+51m         Normal    ExternalProvisioning    persistentvolumeclaim/presit-reports      Waiting for a volume to be created either by the external provisioner 'rancher.io/local-path' or manually by the system administrator. If volume creation is delayed, please verify that the provisioner is running and correctly registered.
+51m         Normal    WaitForFirstConsumer    persistentvolumeclaim/presit-reports      waiting for first consumer to be created before binding
+51m         Normal    SuccessfulCreate        job/presit-phase4-e2e-decision            Created pod: presit-phase4-e2e-decision-7bjg5
+51m         Normal    SuccessfulCreate        job/presit-phase1-database                Created pod: presit-phase1-database-g5mkp
+51m         Warning   FailedScheduling        pod/presit-phase2-application-dllck       running PreBind plugin "VolumeBinding": Operation cannot be fulfilled on persistentvolumeclaims "presit-reports": the object has been modified; please apply your changes to the latest version and try again
+51m         Normal    SuccessfulCreate        job/presit-phase2-application             Created pod: presit-phase2-application-dllck
+51m         Normal    ProvisioningSucceeded   persistentvolumeclaim/presit-reports      Successfully provisioned volume pvc-673ca92c-0787-4778-aa8a-1a6688b5da6d
+51m         Normal    Scheduled               pod/presit-phase2-application-dllck       Successfully assigned pre-sit/presit-phase2-application-dllck to presit-control-plane
+51m         Normal    Scheduled               pod/presit-phase4-e2e-decision-7bjg5      Successfully assigned pre-sit/presit-phase4-e2e-decision-7bjg5 to presit-control-plane
+51m         Normal    Scheduled               pod/presit-phase1-database-g5mkp          Successfully assigned pre-sit/presit-phase1-database-g5mkp to presit-control-plane
+51m         Normal    Pulling                 pod/presit-phase2-application-dllck       Pulling image "bitnami/kubectl:latest"
+51m         Normal    Pulling                 pod/presit-phase1-database-g5mkp          Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+51m         Normal    Pulling                 pod/presit-phase3-integration-g6z57       Pulling image "bitnami/kubectl:latest"
+51m         Normal    Scheduled               pod/presit-phase3-integration-g6z57       Successfully assigned pre-sit/presit-phase3-integration-g6z57 to presit-control-plane
+51m         Normal    Pulling                 pod/presit-phase4-e2e-decision-7bjg5      Pulling image "bitnami/kubectl:latest"
+51m         Normal    Started                 pod/presit-phase1-database-g5mkp          Started container wait-for-db
+51m         Normal    Pulled                  pod/presit-phase1-database-g5mkp          Container image "busybox:1.36" already present on machine
+51m         Normal    Created                 pod/presit-phase1-database-g5mkp          Created container wait-for-db
+51m         Normal    Created                 pod/presit-phase2-application-dllck       Created container wait-for-phase1
+51m         Normal    Pulled                  pod/presit-phase2-application-dllck       Successfully pulled image "bitnami/kubectl:latest" in 1.303s (1.303s including waiting). Image size: 80196245 bytes.
+51m         Normal    Started                 pod/presit-phase2-application-dllck       Started container wait-for-phase1
+51m         Normal    Pulled                  pod/presit-phase3-integration-g6z57       Successfully pulled image "bitnami/kubectl:latest" in 1.201s (2.218s including waiting). Image size: 80196245 bytes.
+51m         Normal    Started                 pod/presit-phase3-integration-g6z57       Started container wait-for-phase2
+51m         Normal    Created                 pod/presit-phase3-integration-g6z57       Created container wait-for-phase2
+51m         Normal    Started                 pod/presit-phase4-e2e-decision-7bjg5      Started container wait-for-phase3
+51m         Normal    Started                 pod/presit-phase1-database-g5mkp          Started container bdd-runner
+51m         Normal    Pulled                  pod/presit-phase1-database-g5mkp          Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 646ms (3.833s including waiting). Image size: 262321963 bytes.
+51m         Normal    Pulled                  pod/presit-phase4-e2e-decision-7bjg5      Successfully pulled image "bitnami/kubectl:latest" in 1.298s (3.513s including waiting). Image size: 80196245 bytes.
+51m         Normal    Created                 pod/presit-phase4-e2e-decision-7bjg5      Created container wait-for-phase3
+51m         Normal    Created                 pod/presit-phase1-database-g5mkp          Created container bdd-runner
+51m         Normal    Completed               job/presit-phase1-database                Job completed
+51m         Normal    Pulling                 pod/presit-phase2-application-dllck       Pulling image "bitnami/kubectl:latest"
+51m         Normal    Created                 pod/presit-phase2-application-dllck       Created container wait-for-apps
+51m         Normal    Pulled                  pod/presit-phase2-application-dllck       Successfully pulled image "bitnami/kubectl:latest" in 1.341s (1.341s including waiting). Image size: 80196245 bytes.
+51m         Normal    Started                 pod/presit-phase2-application-dllck       Started container wait-for-apps
+51m         Normal    Pulling                 pod/presit-phase2-application-dllck       Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+51m         Normal    Pulled                  pod/presit-phase2-application-dllck       Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 21ms (21ms including waiting). Image size: 262321963 bytes.
+51m         Normal    Created                 pod/presit-phase2-application-dllck       Created container bdd-runner
+51m         Normal    Started                 pod/presit-phase2-application-dllck       Started container bdd-runner
+50m         Normal    Pulling                 pod/presit-phase3-integration-g6z57       Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+50m         Normal    Completed               job/presit-phase2-application             Job completed
+50m         Normal    Pulled                  pod/presit-phase3-integration-g6z57       Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 19ms (19ms including waiting). Image size: 262321963 bytes.
+50m         Normal    Started                 pod/presit-phase3-integration-g6z57       Started container bdd-runner
+50m         Normal    Created                 pod/presit-phase3-integration-g6z57       Created container bdd-runner
+50m         Normal    Completed               job/presit-phase3-integration             Job completed
+50m         Normal    Pulled                  pod/presit-phase4-e2e-decision-7bjg5      Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 18ms (18ms including waiting). Image size: 262321963 bytes.
+50m         Normal    Created                 pod/presit-phase4-e2e-decision-7bjg5      Created container bdd-runner
+50m         Normal    Started                 pod/presit-phase4-e2e-decision-7bjg5      Started container bdd-runner
+50m         Normal    Pulling                 pod/presit-phase4-e2e-decision-7bjg5      Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+49m         Normal    Completed               job/presit-phase4-e2e-decision            Job completed
+49m         Normal    Scheduled               pod/report-fetcher                        Successfully assigned pre-sit/report-fetcher to presit-control-plane
+49m         Normal    Pulled                  pod/report-fetcher                        Container image "busybox:1.36" already present on machine
+49m         Normal    Created                 pod/report-fetcher                        Created container c
+49m         Normal    Started                 pod/report-fetcher                        Started container c
+49m         Normal    Killing                 pod/report-fetcher                        Stopping container c
+28m         Normal    Scheduled               pod/customers-service-c8659d44c-lg8cv     Successfully assigned pre-sit/customers-service-c8659d44c-lg8cv to presit-control-plane
+28m         Normal    SuccessfulCreate        replicaset/customers-service-c8659d44c    Created pod: customers-service-c8659d44c-lg8cv
+28m         Normal    ScalingReplicaSet       deployment/customers-service              Scaled up replica set customers-service-c8659d44c to 1
+28m         Normal    Created                 pod/customers-service-c8659d44c-lg8cv     Created container app
+28m         Normal    Pulled                  pod/customers-service-c8659d44c-lg8cv     Successfully pulled image "localhost:5000/petclinic-customers-service:v2.2" in 348ms (348ms including waiting). Image size: 119840092 bytes.
+28m         Normal    Pulling                 pod/customers-service-c8659d44c-lg8cv     Pulling image "localhost:5000/petclinic-customers-service:v2.2"
+28m         Normal    Started                 pod/customers-service-c8659d44c-lg8cv     Started container app
+27m         Normal    SuccessfulDelete        replicaset/customers-service-54d78b6cf7   Deleted pod: customers-service-54d78b6cf7-95xtb
+27m         Normal    ScalingReplicaSet       deployment/customers-service              Scaled down replica set customers-service-54d78b6cf7 to 0 from 1
+27m         Normal    Killing                 pod/customers-service-54d78b6cf7-95xtb    Stopping container app
+27m         Normal    Pulling                 pod/busy                                  Pulling image "alpine"
+27m         Normal    Scheduled               pod/busy                                  Successfully assigned pre-sit/busy to presit-control-plane
+27m         Normal    Pulled                  pod/busy                                  Successfully pulled image "alpine" in 1.55s (1.55s including waiting). Image size: 3875040 bytes.
+27m         Normal    Created                 pod/busy                                  Created container busy
+27m         Normal    Started                 pod/busy                                  Started container busy
+26m         Normal    ExternalProvisioning    persistentvolumeclaim/presit-reports      Waiting for a volume to be created either by the external provisioner 'rancher.io/local-path' or manually by the system administrator. If volume creation is delayed, please verify that the provisioner is running and correctly registered.
+26m         Normal    Provisioning            persistentvolumeclaim/presit-reports      External provisioner is provisioning volume for claim "pre-sit/presit-reports"
+26m         Warning   FailedScheduling        pod/presit-phase2-application-5qk2t       running PreBind plugin "VolumeBinding": Operation cannot be fulfilled on persistentvolumeclaims "presit-reports": the object has been modified; please apply your changes to the latest version and try again
+26m         Normal    SuccessfulCreate        job/presit-phase2-application             Created pod: presit-phase2-application-5qk2t
+26m         Normal    WaitForFirstConsumer    persistentvolumeclaim/presit-reports      waiting for first consumer to be created before binding
+26m         Normal    SuccessfulCreate        job/presit-phase3-integration             Created pod: presit-phase3-integration-jsdc8
+26m         Normal    SuccessfulCreate        job/presit-phase4-e2e-decision            Created pod: presit-phase4-e2e-decision-r5x7d
+26m         Normal    SuccessfulCreate        job/presit-phase1-database                Created pod: presit-phase1-database-6tg6m
+26m         Normal    ProvisioningSucceeded   persistentvolumeclaim/presit-reports      Successfully provisioned volume pvc-c3fcaa87-965c-4e96-8cd3-340928646ca6
+26m         Normal    Scheduled               pod/presit-phase2-application-5qk2t       Successfully assigned pre-sit/presit-phase2-application-5qk2t to presit-control-plane
+26m         Normal    Started                 pod/presit-phase1-database-6tg6m          Started container wait-for-db
+26m         Normal    Created                 pod/presit-phase1-database-6tg6m          Created container wait-for-db
+26m         Normal    Pulling                 pod/presit-phase4-e2e-decision-r5x7d      Pulling image "bitnami/kubectl:latest"
+26m         Normal    Pulled                  pod/presit-phase1-database-6tg6m          Container image "busybox:1.36" already present on machine
+26m         Normal    Scheduled               pod/presit-phase3-integration-jsdc8       Successfully assigned pre-sit/presit-phase3-integration-jsdc8 to presit-control-plane
+26m         Normal    Scheduled               pod/presit-phase4-e2e-decision-r5x7d      Successfully assigned pre-sit/presit-phase4-e2e-decision-r5x7d to presit-control-plane
+26m         Normal    Scheduled               pod/presit-phase1-database-6tg6m          Successfully assigned pre-sit/presit-phase1-database-6tg6m to presit-control-plane
+26m         Normal    Pulling                 pod/presit-phase2-application-5qk2t       Pulling image "bitnami/kubectl:latest"
+26m         Normal    Pulling                 pod/presit-phase3-integration-jsdc8       Pulling image "bitnami/kubectl:latest"
+26m         Normal    Created                 pod/presit-phase2-application-5qk2t       Created container wait-for-phase1
+26m         Normal    Pulling                 pod/presit-phase1-database-6tg6m          Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+26m         Normal    Started                 pod/presit-phase2-application-5qk2t       Started container wait-for-phase1
+26m         Normal    Pulled                  pod/presit-phase2-application-5qk2t       Successfully pulled image "bitnami/kubectl:latest" in 1.534s (1.535s including waiting). Image size: 80196245 bytes.
+26m         Normal    Started                 pod/presit-phase3-integration-jsdc8       Started container wait-for-phase2
+26m         Normal    Pulled                  pod/presit-phase3-integration-jsdc8       Successfully pulled image "bitnami/kubectl:latest" in 1.534s (2.609s including waiting). Image size: 80196245 bytes.
+26m         Normal    Created                 pod/presit-phase3-integration-jsdc8       Created container wait-for-phase2
+26m         Normal    Created                 pod/presit-phase4-e2e-decision-r5x7d      Created container wait-for-phase3
+26m         Normal    Pulled                  pod/presit-phase4-e2e-decision-r5x7d      Successfully pulled image "bitnami/kubectl:latest" in 1.434s (4.04s including waiting). Image size: 80196245 bytes.
+26m         Normal    Started                 pod/presit-phase4-e2e-decision-r5x7d      Started container wait-for-phase3
+26m         Normal    Started                 pod/presit-phase1-database-6tg6m          Started container bdd-runner
+26m         Normal    Created                 pod/presit-phase1-database-6tg6m          Created container bdd-runner
+26m         Normal    Pulled                  pod/presit-phase1-database-6tg6m          Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 574ms (3.747s including waiting). Image size: 262321913 bytes.
+26m         Normal    Pulled                  pod/presit-phase1-database-9xkpn          Container image "busybox:1.36" already present on machine
+26m         Normal    SuccessfulCreate        job/presit-phase1-database                Created pod: presit-phase1-database-9xkpn
+26m         Normal    Pulled                  pod/presit-phase1-database-9xkpn          Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 16ms (16ms including waiting). Image size: 262321913 bytes.
+26m         Normal    Created                 pod/presit-phase1-database-9xkpn          Created container wait-for-db
+26m         Normal    Started                 pod/presit-phase1-database-9xkpn          Started container wait-for-db
+26m         Normal    Pulling                 pod/presit-phase1-database-9xkpn          Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+26m         Normal    Started                 pod/presit-phase1-database-9xkpn          Started container bdd-runner
+26m         Normal    Scheduled               pod/presit-phase1-database-9xkpn          Successfully assigned pre-sit/presit-phase1-database-9xkpn to presit-control-plane
+26m         Normal    Created                 pod/presit-phase1-database-9xkpn          Created container bdd-runner
+25m         Warning   BackoffLimitExceeded    job/presit-phase1-database                Job has reached the specified backoff limit
+24m         Normal    Killing                 pod/postgres-0                            Stopping container postgres
+24m         Normal    Scheduled               pod/postgres-0                            Successfully assigned pre-sit/postgres-0 to presit-control-plane
+24m         Normal    Started                 pod/postgres-0                            Started container postgres
+24m         Normal    Created                 pod/postgres-0                            Created container postgres
+24m         Normal    Pulled                  pod/postgres-0                            Container image "postgres:16-alpine" already present on machine
+24m         Normal    Pulling                 pod/vets-service-676bc85987-d4wwd         Pulling image "localhost:5000/petclinic-vets-service:v2.2"
+24m         Normal    Created                 pod/vets-service-676bc85987-d4wwd         Created container app
+24m         Normal    Pulled                  pod/visits-service-c6d6c9c59-xgpbs        Successfully pulled image "localhost:5000/petclinic-visits-service:v2.2" in 22ms (56ms including waiting). Image size: 119831278 bytes.
+24m         Normal    ScalingReplicaSet       deployment/customers-service              Scaled up replica set customers-service-fff4c68f5 to 1
+24m         Normal    Started                 pod/visits-service-c6d6c9c59-xgpbs        Started container app
+24m         Normal    Killing                 pod/presit-phase2-application-5qk2t       Stopping container wait-for-phase1
+24m         Normal    SuccessfulCreate        replicaset/customers-service-fff4c68f5    Created pod: customers-service-fff4c68f5-tbrgc
+24m         Normal    ScalingReplicaSet       deployment/vets-service                   Scaled up replica set vets-service-676bc85987 to 1
+24m         Normal    SuccessfulCreate        replicaset/visits-service-c6d6c9c59       Created pod: visits-service-c6d6c9c59-xgpbs
+24m         Normal    Pulling                 pod/visits-service-c6d6c9c59-xgpbs        Pulling image "localhost:5000/petclinic-visits-service:v2.2"
+24m         Normal    SuccessfulCreate        replicaset/vets-service-676bc85987        Created pod: vets-service-676bc85987-d4wwd
+24m         Normal    Scheduled               pod/visits-service-c6d6c9c59-xgpbs        Successfully assigned pre-sit/visits-service-c6d6c9c59-xgpbs to presit-control-plane
+24m         Normal    Started                 pod/vets-service-676bc85987-d4wwd         Started container app
+24m         Normal    Killing                 pod/presit-phase4-e2e-decision-r5x7d      Stopping container wait-for-phase3
+24m         Normal    Pulled                  pod/vets-service-676bc85987-d4wwd         Successfully pulled image "localhost:5000/petclinic-vets-service:v2.2" in 22ms (42ms including waiting). Image size: 120739217 bytes.
+24m         Normal    Created                 pod/visits-service-c6d6c9c59-xgpbs        Created container app
+24m         Normal    Scheduled               pod/vets-service-676bc85987-d4wwd         Successfully assigned pre-sit/vets-service-676bc85987-d4wwd to presit-control-plane
+24m         Normal    ScalingReplicaSet       deployment/visits-service                 Scaled up replica set visits-service-c6d6c9c59 to 1
+24m         Normal    Scheduled               pod/customers-service-fff4c68f5-tbrgc     Successfully assigned pre-sit/customers-service-fff4c68f5-tbrgc to presit-control-plane
+24m         Normal    Pulling                 pod/customers-service-fff4c68f5-tbrgc     Pulling image "localhost:5000/petclinic-customers-service:v2.2"
+24m         Normal    Pulled                  pod/customers-service-fff4c68f5-tbrgc     Successfully pulled image "localhost:5000/petclinic-customers-service:v2.2" in 19ms (20ms including waiting). Image size: 119840092 bytes.
+24m         Normal    Created                 pod/customers-service-fff4c68f5-tbrgc     Created container app
+24m         Normal    Started                 pod/customers-service-fff4c68f5-tbrgc     Started container app
+24m         Normal    Killing                 pod/presit-phase3-integration-jsdc8       Stopping container wait-for-phase2
+23m         Normal    ScalingReplicaSet       deployment/vets-service                   Scaled down replica set vets-service-867f77fb4c to 0 from 1
+23m         Normal    SuccessfulDelete        replicaset/visits-service-698898ff99      Deleted pod: visits-service-698898ff99-nxfbw
+23m         Normal    SuccessfulCreate        job/presit-phase2-application             Created pod: presit-phase2-application-b9j7g
+23m         Normal    ScalingReplicaSet       deployment/customers-service              Scaled down replica set customers-service-c8659d44c to 0 from 1
+23m         Normal    SuccessfulCreate        job/presit-phase4-e2e-decision            Created pod: presit-phase4-e2e-decision-vctqd
+23m         Normal    Killing                 pod/visits-service-698898ff99-nxfbw       Stopping container app
+23m         Normal    SuccessfulCreate        job/presit-phase3-integration             Created pod: presit-phase3-integration-qwxwz
+23m         Normal    SuccessfulCreate        job/presit-phase1-database                Created pod: presit-phase1-database-rtxg6
+23m         Normal    SuccessfulDelete        replicaset/vets-service-867f77fb4c        Deleted pod: vets-service-867f77fb4c-8vkzs
+23m         Normal    Killing                 pod/vets-service-867f77fb4c-8vkzs         Stopping container app
+23m         Warning   FailedScheduling        pod/presit-phase2-application-b9j7g       running PreBind plugin "VolumeBinding": Operation cannot be fulfilled on persistentvolumeclaims "presit-reports": the object has been modified; please apply your changes to the latest version and try again
+23m         Normal    ScalingReplicaSet       deployment/visits-service                 Scaled down replica set visits-service-698898ff99 to 0 from 1
+23m         Normal    Killing                 pod/customers-service-c8659d44c-lg8cv     Stopping container app
+23m         Normal    WaitForFirstConsumer    persistentvolumeclaim/presit-reports      waiting for first consumer to be created before binding
+23m         Normal    ExternalProvisioning    persistentvolumeclaim/presit-reports      Waiting for a volume to be created either by the external provisioner 'rancher.io/local-path' or manually by the system administrator. If volume creation is delayed, please verify that the provisioner is running and correctly registered.
+23m         Normal    Provisioning            persistentvolumeclaim/presit-reports      External provisioner is provisioning volume for claim "pre-sit/presit-reports"
+23m         Normal    SuccessfulDelete        replicaset/customers-service-c8659d44c    Deleted pod: customers-service-c8659d44c-lg8cv
+23m         Normal    ProvisioningSucceeded   persistentvolumeclaim/presit-reports      Successfully provisioned volume pvc-a7c2ecb3-ec51-4f3b-a7be-9727a1667ad9
+23m         Normal    Scheduled               pod/presit-phase2-application-b9j7g       Successfully assigned pre-sit/presit-phase2-application-b9j7g to presit-control-plane
+23m         Normal    Scheduled               pod/presit-phase3-integration-qwxwz       Successfully assigned pre-sit/presit-phase3-integration-qwxwz to presit-control-plane
+23m         Normal    Pulling                 pod/presit-phase4-e2e-decision-vctqd      Pulling image "bitnami/kubectl:latest"
+23m         Normal    Pulled                  pod/presit-phase1-database-rtxg6          Container image "busybox:1.36" already present on machine
+23m         Normal    Created                 pod/presit-phase1-database-rtxg6          Created container wait-for-db
+23m         Normal    Started                 pod/presit-phase1-database-rtxg6          Started container wait-for-db
+23m         Normal    Scheduled               pod/presit-phase1-database-rtxg6          Successfully assigned pre-sit/presit-phase1-database-rtxg6 to presit-control-plane
+23m         Normal    Scheduled               pod/presit-phase4-e2e-decision-vctqd      Successfully assigned pre-sit/presit-phase4-e2e-decision-vctqd to presit-control-plane
+23m         Normal    Pulling                 pod/presit-phase2-application-b9j7g       Pulling image "bitnami/kubectl:latest"
+23m         Normal    Pulling                 pod/presit-phase3-integration-qwxwz       Pulling image "bitnami/kubectl:latest"
+23m         Normal    Created                 pod/presit-phase2-application-b9j7g       Created container wait-for-phase1
+23m         Normal    Pulling                 pod/presit-phase1-database-rtxg6          Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+23m         Normal    Started                 pod/presit-phase2-application-b9j7g       Started container wait-for-phase1
+23m         Normal    Pulled                  pod/presit-phase2-application-b9j7g       Successfully pulled image "bitnami/kubectl:latest" in 1.524s (1.524s including waiting). Image size: 80196245 bytes.
+23m         Normal    Created                 pod/presit-phase4-e2e-decision-vctqd      Created container wait-for-phase3
+23m         Normal    Pulled                  pod/presit-phase4-e2e-decision-vctqd      Successfully pulled image "bitnami/kubectl:latest" in 1.54s (2.432s including waiting). Image size: 80196245 bytes.
+23m         Normal    Started                 pod/presit-phase4-e2e-decision-vctqd      Started container wait-for-phase3
+23m         Normal    Pulled                  pod/presit-phase3-integration-qwxwz       Successfully pulled image "bitnami/kubectl:latest" in 1.397s (3.829s including waiting). Image size: 80196245 bytes.
+23m         Normal    Started                 pod/presit-phase3-integration-qwxwz       Started container wait-for-phase2
+23m         Normal    Created                 pod/presit-phase3-integration-qwxwz       Created container wait-for-phase2
+23m         Normal    Created                 pod/presit-phase1-database-rtxg6          Created container bdd-runner
+23m         Normal    Started                 pod/presit-phase1-database-rtxg6          Started container bdd-runner
+23m         Normal    Pulled                  pod/presit-phase1-database-rtxg6          Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 571ms (3.314s including waiting). Image size: 262322192 bytes.
+23m         Normal    Completed               job/presit-phase1-database                Job completed
+23m         Normal    Pulling                 pod/presit-phase2-application-b9j7g       Pulling image "bitnami/kubectl:latest"
+23m         Normal    Started                 pod/presit-phase2-application-b9j7g       Started container wait-for-apps
+23m         Normal    Pulled                  pod/presit-phase2-application-b9j7g       Successfully pulled image "bitnami/kubectl:latest" in 1.558s (1.558s including waiting). Image size: 80196245 bytes.
+23m         Normal    Created                 pod/presit-phase2-application-b9j7g       Created container wait-for-apps
+23m         Normal    Pulled                  pod/presit-phase2-application-b9j7g       Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 21ms (21ms including waiting). Image size: 262322192 bytes.
+23m         Normal    Started                 pod/presit-phase2-application-b9j7g       Started container bdd-runner
+23m         Normal    Created                 pod/presit-phase2-application-b9j7g       Created container bdd-runner
+23m         Normal    Pulling                 pod/presit-phase2-application-b9j7g       Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+23m         Normal    Completed               job/presit-phase2-application             Job completed
+23m         Normal    Started                 pod/presit-phase3-integration-qwxwz       Started container bdd-runner
+23m         Normal    Pulled                  pod/presit-phase3-integration-qwxwz       Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 16ms (16ms including waiting). Image size: 262322192 bytes.
+23m         Normal    Created                 pod/presit-phase3-integration-qwxwz       Created container bdd-runner
+23m         Normal    Pulling                 pod/presit-phase3-integration-qwxwz       Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+22m         Normal    Completed               job/presit-phase3-integration             Job completed
+22m         Normal    Pulling                 pod/presit-phase4-e2e-decision-vctqd      Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+22m         Normal    Started                 pod/presit-phase4-e2e-decision-vctqd      Started container bdd-runner
+22m         Normal    Pulled                  pod/presit-phase4-e2e-decision-vctqd      Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 21ms (21ms including waiting). Image size: 262322192 bytes.
+22m         Normal    Created                 pod/presit-phase4-e2e-decision-vctqd      Created container bdd-runner
+21m         Normal    Pulling                 pod/presit-phase4-e2e-decision-tfqmv      Pulling image "bitnami/kubectl:latest"
+21m         Normal    SuccessfulCreate        job/presit-phase4-e2e-decision            Created pod: presit-phase4-e2e-decision-tfqmv
+21m         Normal    Scheduled               pod/presit-phase4-e2e-decision-tfqmv      Successfully assigned pre-sit/presit-phase4-e2e-decision-tfqmv to presit-control-plane
+21m         Normal    Started                 pod/presit-phase4-e2e-decision-tfqmv      Started container wait-for-phase3
+21m         Normal    Pulled                  pod/presit-phase4-e2e-decision-tfqmv      Successfully pulled image "bitnami/kubectl:latest" in 1.303s (1.303s including waiting). Image size: 80196245 bytes.
+21m         Normal    Created                 pod/presit-phase4-e2e-decision-tfqmv      Created container wait-for-phase3
+21m         Normal    Started                 pod/presit-phase4-e2e-decision-tfqmv      Started container bdd-runner
+21m         Normal    Pulling                 pod/presit-phase4-e2e-decision-tfqmv      Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+21m         Normal    Created                 pod/presit-phase4-e2e-decision-tfqmv      Created container bdd-runner
+21m         Normal    Pulled                  pod/presit-phase4-e2e-decision-tfqmv      Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 21ms (21ms including waiting). Image size: 262322192 bytes.
+21m         Warning   BackoffLimitExceeded    job/presit-phase4-e2e-decision            Job has reached the specified backoff limit
+20m         Normal    SuccessfulCreate        job/presit-phase4-e2e-decision            Created pod: presit-phase4-e2e-decision-hfb6p
+20m         Normal    Pulling                 pod/presit-phase4-e2e-decision-hfb6p      Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+20m         Normal    Started                 pod/presit-phase4-e2e-decision-hfb6p      Started container bdd-runner
+20m         Normal    Scheduled               pod/presit-phase4-e2e-decision-hfb6p      Successfully assigned pre-sit/presit-phase4-e2e-decision-hfb6p to presit-control-plane
+20m         Normal    Created                 pod/presit-phase4-e2e-decision-hfb6p      Created container bdd-runner
+20m         Normal    Pulled                  pod/presit-phase4-e2e-decision-hfb6p      Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 16ms (16ms including waiting). Image size: 262322192 bytes.
+19m         Warning   BackoffLimitExceeded    job/presit-phase4-e2e-decision            Job has reached the specified backoff limit
+19m         Normal    Scheduled               pod/presit-phase4-e2e-decision-hq26c      Successfully assigned pre-sit/presit-phase4-e2e-decision-hq26c to presit-control-plane
+19m         Normal    SuccessfulCreate        job/presit-phase4-e2e-decision            Created pod: presit-phase4-e2e-decision-hq26c
+19m         Normal    Pulling                 pod/presit-phase4-e2e-decision-hq26c      Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+19m         Normal    Pulled                  pod/presit-phase4-e2e-decision-hq26c      Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 24ms (24ms including waiting). Image size: 262322192 bytes.
+19m         Normal    Created                 pod/presit-phase4-e2e-decision-hq26c      Created container bdd-runner
+19m         Normal    Started                 pod/presit-phase4-e2e-decision-hq26c      Started container bdd-runner
+18m         Warning   BackoffLimitExceeded    job/presit-phase4-e2e-decision            Job has reached the specified backoff limit
+17m         Normal    SuccessfulCreate        job/presit-phase4-e2e-decision            Created pod: presit-phase4-e2e-decision-2jddl
+17m         Normal    Scheduled               pod/presit-phase4-e2e-decision-2jddl      Successfully assigned pre-sit/presit-phase4-e2e-decision-2jddl to presit-control-plane
+17m         Normal    Started                 pod/presit-phase4-e2e-decision-2jddl      Started container bdd-runner
+17m         Normal    Created                 pod/presit-phase4-e2e-decision-2jddl      Created container bdd-runner
+17m         Normal    Pulling                 pod/presit-phase4-e2e-decision-2jddl      Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+17m         Normal    Pulled                  pod/presit-phase4-e2e-decision-2jddl      Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 610ms (610ms including waiting). Image size: 262322430 bytes.
+17m         Warning   BackoffLimitExceeded    job/presit-phase4-e2e-decision            Job has reached the specified backoff limit
+16m         Normal    Scheduled               pod/inspect                               Successfully assigned pre-sit/inspect to presit-control-plane
+16m         Normal    Pulled                  pod/inspect                               Container image "localhost:5000/presit-bdd-runner:v2.2" already present on machine
+16m         Normal    Started                 pod/inspect                               Started container inspect
+16m         Normal    Created                 pod/inspect                               Created container inspect
+16m         Normal    Scheduled               pod/presit-phase4-e2e-decision-4brdh      Successfully assigned pre-sit/presit-phase4-e2e-decision-4brdh to presit-control-plane
+16m         Normal    SuccessfulCreate        job/presit-phase4-e2e-decision            Created pod: presit-phase4-e2e-decision-4brdh
+16m         Normal    Started                 pod/presit-phase4-e2e-decision-4brdh      Started container bdd-runner
+16m         Normal    Created                 pod/presit-phase4-e2e-decision-4brdh      Created container bdd-runner
+16m         Normal    Pulled                  pod/presit-phase4-e2e-decision-4brdh      Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 22ms (22ms including waiting). Image size: 262322430 bytes.
+16m         Normal    Pulling                 pod/presit-phase4-e2e-decision-4brdh      Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+15m         Warning   BackoffLimitExceeded    job/presit-phase4-e2e-decision            Job has reached the specified backoff limit
+15m         Normal    SuccessfulCreate        job/presit-phase4-e2e-decision            Created pod: presit-phase4-e2e-decision-kdh25
+15m         Normal    Scheduled               pod/presit-phase4-e2e-decision-kdh25      Successfully assigned pre-sit/presit-phase4-e2e-decision-kdh25 to presit-control-plane
+15m         Normal    Created                 pod/presit-phase4-e2e-decision-kdh25      Created container bdd-runner
+15m         Normal    Pulling                 pod/presit-phase4-e2e-decision-kdh25      Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+15m         Normal    Pulled                  pod/presit-phase4-e2e-decision-kdh25      Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 596ms (596ms including waiting). Image size: 262322454 bytes.
+15m         Normal    Started                 pod/presit-phase4-e2e-decision-kdh25      Started container bdd-runner
+14m         Normal    Completed               job/presit-phase4-e2e-decision            Job completed
+4m16s       Normal    Scheduled               pod/postgres-0                            Successfully assigned pre-sit/postgres-0 to presit-control-plane
+4m16s       Normal    Killing                 pod/postgres-0                            Stopping container postgres
+4m15s       Normal    Created                 pod/postgres-0                            Created container postgres
+4m15s       Normal    Pulled                  pod/postgres-0                            Container image "postgres:16-alpine" already present on machine
+4m15s       Normal    Started                 pod/postgres-0                            Started container postgres
+4m12s       Warning   Unhealthy               pod/customers-service-fff4c68f5-tbrgc     Readiness probe failed: Get "http://10.244.0.104:8081/actuator/health": context deadline exceeded (Client.Timeout exceeded while awaiting headers)
+4m12s       Warning   Unhealthy               pod/vets-service-676bc85987-d4wwd         Readiness probe failed: Get "http://10.244.0.105:8083/actuator/health": context deadline exceeded (Client.Timeout exceeded while awaiting headers)
+4m12s       Warning   Unhealthy               pod/visits-service-c6d6c9c59-xgpbs        Readiness probe failed: Get "http://10.244.0.106:8082/actuator/health": context deadline exceeded (Client.Timeout exceeded while awaiting headers)
+4m10s       Normal    SuccessfulCreate        replicaset/vets-service-585f6b6bd7        Created pod: vets-service-585f6b6bd7-mrpq8
+4m10s       Normal    Scheduled               pod/customers-service-7578d76799-lvsm4    Successfully assigned pre-sit/customers-service-7578d76799-lvsm4 to presit-control-plane
+4m10s       Normal    SuccessfulCreate        replicaset/customers-service-7578d76799   Created pod: customers-service-7578d76799-lvsm4
+4m10s       Normal    Scheduled               pod/vets-service-585f6b6bd7-mrpq8         Successfully assigned pre-sit/vets-service-585f6b6bd7-mrpq8 to presit-control-plane
+4m10s       Normal    ScalingReplicaSet       deployment/vets-service                   Scaled up replica set vets-service-585f6b6bd7 to 1
+4m10s       Normal    Scheduled               pod/visits-service-67cbd5788c-xcjk9       Successfully assigned pre-sit/visits-service-67cbd5788c-xcjk9 to presit-control-plane
+4m10s       Normal    SuccessfulCreate        replicaset/visits-service-67cbd5788c      Created pod: visits-service-67cbd5788c-xcjk9
+4m10s       Normal    ScalingReplicaSet       deployment/customers-service              Scaled up replica set customers-service-7578d76799 to 1
+4m10s       Normal    ScalingReplicaSet       deployment/visits-service                 Scaled up replica set visits-service-67cbd5788c to 1
+4m9s        Normal    Created                 pod/customers-service-7578d76799-lvsm4    Created container app
+4m9s        Warning   FailedScheduling        pod/presit-phase2-application-8k9h9       running PreBind plugin "VolumeBinding": Operation cannot be fulfilled on persistentvolumeclaims "presit-reports": the object has been modified; please apply your changes to the latest version and try again
+4m9s        Normal    Pulled                  pod/vets-service-585f6b6bd7-mrpq8         Successfully pulled image "localhost:5000/petclinic-vets-service:v2.2" in 19ms (19ms including waiting). Image size: 120739217 bytes.
+4m9s        Normal    Pulling                 pod/vets-service-585f6b6bd7-mrpq8         Pulling image "localhost:5000/petclinic-vets-service:v2.2"
+4m9s        Normal    Started                 pod/vets-service-585f6b6bd7-mrpq8         Started container app
+4m9s        Normal    Provisioning            persistentvolumeclaim/presit-reports      External provisioner is provisioning volume for claim "pre-sit/presit-reports"
+4m9s        Normal    ExternalProvisioning    persistentvolumeclaim/presit-reports      Waiting for a volume to be created either by the external provisioner 'rancher.io/local-path' or manually by the system administrator. If volume creation is delayed, please verify that the provisioner is running and correctly registered.
+4m9s        Normal    WaitForFirstConsumer    persistentvolumeclaim/presit-reports      waiting for first consumer to be created before binding
+4m9s        Normal    Created                 pod/vets-service-585f6b6bd7-mrpq8         Created container app
+4m9s        Normal    Started                 pod/customers-service-7578d76799-lvsm4    Started container app
+4m9s        Normal    Pulled                  pod/customers-service-7578d76799-lvsm4    Successfully pulled image "localhost:5000/petclinic-customers-service:v2.2" in 21ms (65ms including waiting). Image size: 119840092 bytes.
+4m9s        Normal    Pulling                 pod/visits-service-67cbd5788c-xcjk9       Pulling image "localhost:5000/petclinic-visits-service:v2.2"
+4m9s        Normal    Pulled                  pod/visits-service-67cbd5788c-xcjk9       Successfully pulled image "localhost:5000/petclinic-visits-service:v2.2" in 28ms (47ms including waiting). Image size: 119831278 bytes.
+4m9s        Normal    SuccessfulCreate        job/presit-phase2-application             Created pod: presit-phase2-application-8k9h9
+4m9s        Normal    Created                 pod/visits-service-67cbd5788c-xcjk9       Created container app
+4m9s        Normal    Started                 pod/visits-service-67cbd5788c-xcjk9       Started container app
+4m9s        Normal    SuccessfulCreate        job/presit-phase4-e2e-decision            Created pod: presit-phase4-e2e-decision-ct8v4
+4m9s        Normal    SuccessfulCreate        job/presit-phase1-database                Created pod: presit-phase1-database-sflwv
+4m9s        Normal    Pulling                 pod/customers-service-7578d76799-lvsm4    Pulling image "localhost:5000/petclinic-customers-service:v2.2"
+4m9s        Normal    SuccessfulCreate        job/presit-phase3-integration             Created pod: presit-phase3-integration-n2b4x
+4m7s        Normal    ProvisioningSucceeded   persistentvolumeclaim/presit-reports      Successfully provisioned volume pvc-10e978ae-9138-4fc6-9837-35eb620db5f2
+4m7s        Normal    Scheduled               pod/presit-phase2-application-8k9h9       Successfully assigned pre-sit/presit-phase2-application-8k9h9 to presit-control-plane
+4m7s        Normal    Pulling                 pod/presit-phase2-application-8k9h9       Pulling image "bitnami/kubectl:latest"
+4m6s        Normal    Pulling                 pod/presit-phase3-integration-n2b4x       Pulling image "bitnami/kubectl:latest"
+4m6s        Normal    Scheduled               pod/presit-phase3-integration-n2b4x       Successfully assigned pre-sit/presit-phase3-integration-n2b4x to presit-control-plane
+4m6s        Normal    Pulled                  pod/presit-phase1-database-sflwv          Container image "busybox:1.36" already present on machine
+4m6s        Normal    Created                 pod/presit-phase1-database-sflwv          Created container wait-for-db
+4m6s        Normal    Started                 pod/presit-phase1-database-sflwv          Started container wait-for-db
+4m6s        Normal    Pulling                 pod/presit-phase4-e2e-decision-ct8v4      Pulling image "bitnami/kubectl:latest"
+4m6s        Normal    Scheduled               pod/presit-phase4-e2e-decision-ct8v4      Successfully assigned pre-sit/presit-phase4-e2e-decision-ct8v4 to presit-control-plane
+4m6s        Normal    Scheduled               pod/presit-phase1-database-sflwv          Successfully assigned pre-sit/presit-phase1-database-sflwv to presit-control-plane
+4m6s        Normal    Pulling                 pod/presit-phase1-database-sflwv          Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+4m5s        Normal    Pulled                  pod/presit-phase2-application-8k9h9       Successfully pulled image "bitnami/kubectl:latest" in 1.381s (1.381s including waiting). Image size: 80196245 bytes.
+4m5s        Normal    Created                 pod/presit-phase2-application-8k9h9       Created container wait-for-phase1
+4m5s        Normal    Started                 pod/presit-phase2-application-8k9h9       Started container wait-for-phase1
+4m4s        Normal    Pulled                  pod/presit-phase3-integration-n2b4x       Successfully pulled image "bitnami/kubectl:latest" in 1.533s (2.142s including waiting). Image size: 80196245 bytes.
+4m4s        Normal    Created                 pod/presit-phase3-integration-n2b4x       Created container wait-for-phase2
+4m4s        Normal    Started                 pod/presit-phase3-integration-n2b4x       Started container wait-for-phase2
+4m2s        Normal    Created                 pod/presit-phase1-database-sflwv          Created container bdd-runner
+4m2s        Normal    Started                 pod/presit-phase1-database-sflwv          Started container bdd-runner
+4m2s        Normal    Pulled                  pod/presit-phase1-database-sflwv          Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 25ms (3.558s including waiting). Image size: 262322454 bytes.
+4m2s        Normal    Pulled                  pod/presit-phase4-e2e-decision-ct8v4      Successfully pulled image "bitnami/kubectl:latest" in 1.594s (3.723s including waiting). Image size: 80196245 bytes.
+4m2s        Normal    Created                 pod/presit-phase4-e2e-decision-ct8v4      Created container wait-for-phase3
+4m2s        Normal    Started                 pod/presit-phase4-e2e-decision-ct8v4      Started container wait-for-phase3
+3m41s       Normal    Created                 pod/presit-phase1-database-6jhl7          Created container wait-for-db
+3m41s       Normal    Pulled                  pod/presit-phase1-database-6jhl7          Container image "busybox:1.36" already present on machine
+3m41s       Normal    Started                 pod/presit-phase1-database-6jhl7          Started container wait-for-db
+3m41s       Normal    SuccessfulCreate        job/presit-phase1-database                Created pod: presit-phase1-database-6jhl7
+3m41s       Normal    Scheduled               pod/presit-phase1-database-6jhl7          Successfully assigned pre-sit/presit-phase1-database-6jhl7 to presit-control-plane
+3m40s       Normal    Pulling                 pod/presit-phase1-database-6jhl7          Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+3m40s       Normal    Pulled                  pod/presit-phase1-database-6jhl7          Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 19ms (19ms including waiting). Image size: 262322454 bytes.
+3m40s       Normal    Created                 pod/presit-phase1-database-6jhl7          Created container bdd-runner
+3m40s       Normal    Started                 pod/presit-phase1-database-6jhl7          Started container bdd-runner
+3m29s       Normal    SuccessfulDelete        replicaset/customers-service-fff4c68f5    Deleted pod: customers-service-fff4c68f5-tbrgc
+3m29s       Normal    Killing                 pod/visits-service-c6d6c9c59-xgpbs        Stopping container app
+3m29s       Normal    ScalingReplicaSet       deployment/customers-service              Scaled down replica set customers-service-fff4c68f5 to 0 from 1
+3m29s       Normal    ScalingReplicaSet       deployment/vets-service                   Scaled down replica set vets-service-676bc85987 to 0 from 1
+3m29s       Normal    Completed               job/presit-phase1-database                Job completed
+3m29s       Normal    Killing                 pod/customers-service-fff4c68f5-tbrgc     Stopping container app
+3m29s       Normal    SuccessfulDelete        replicaset/visits-service-c6d6c9c59       Deleted pod: visits-service-c6d6c9c59-xgpbs
+3m29s       Normal    SuccessfulDelete        replicaset/vets-service-676bc85987        Deleted pod: vets-service-676bc85987-d4wwd
+3m29s       Normal    ScalingReplicaSet       deployment/visits-service                 Scaled down replica set visits-service-c6d6c9c59 to 0 from 1
+3m29s       Normal    Killing                 pod/vets-service-676bc85987-d4wwd         Stopping container app
+3m28s       Normal    Pulling                 pod/presit-phase2-application-8k9h9       Pulling image "bitnami/kubectl:latest"
+3m27s       Normal    Pulled                  pod/presit-phase2-application-8k9h9       Successfully pulled image "bitnami/kubectl:latest" in 1.327s (1.327s including waiting). Image size: 80196245 bytes.
+3m27s       Normal    Created                 pod/presit-phase2-application-8k9h9       Created container wait-for-apps
+3m27s       Normal    Started                 pod/presit-phase2-application-8k9h9       Started container wait-for-apps
+3m25s       Normal    Started                 pod/presit-phase2-application-8k9h9       Started container bdd-runner
+3m25s       Normal    Created                 pod/presit-phase2-application-8k9h9       Created container bdd-runner
+3m25s       Normal    Pulling                 pod/presit-phase2-application-8k9h9       Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+3m25s       Normal    Pulled                  pod/presit-phase2-application-8k9h9       Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 22ms (22ms including waiting). Image size: 262322454 bytes.
+3m7s        Normal    Completed               job/presit-phase2-application             Job completed
+3m6s        Normal    Created                 pod/presit-phase3-integration-n2b4x       Created container bdd-runner
+3m6s        Normal    Pulling                 pod/presit-phase3-integration-n2b4x       Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+3m6s        Normal    Pulled                  pod/presit-phase3-integration-n2b4x       Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 18ms (18ms including waiting). Image size: 262322454 bytes.
+3m6s        Normal    Started                 pod/presit-phase3-integration-n2b4x       Started container bdd-runner
+2m49s       Normal    Completed               job/presit-phase3-integration             Job completed
+2m48s       Normal    Started                 pod/presit-phase4-e2e-decision-ct8v4      Started container bdd-runner
+2m48s       Normal    Created                 pod/presit-phase4-e2e-decision-ct8v4      Created container bdd-runner
+2m48s       Normal    Pulled                  pod/presit-phase4-e2e-decision-ct8v4      Successfully pulled image "localhost:5000/presit-bdd-runner:v2.2" in 19ms (19ms including waiting). Image size: 262322454 bytes.
+2m48s       Normal    Pulling                 pod/presit-phase4-e2e-decision-ct8v4      Pulling image "localhost:5000/presit-bdd-runner:v2.2"
+2m1s        Normal    Completed               job/presit-phase4-e2e-decision            Job completed
+108s        Normal    Scheduled               pod/evidence-fetcher                      Successfully assigned pre-sit/evidence-fetcher to presit-control-plane
+107s        Normal    Started                 pod/evidence-fetcher                      Started container c
+107s        Normal    Created                 pod/evidence-fetcher                      Created container c
+107s        Normal    Pulled                  pod/evidence-fetcher                      Container image "busybox:1.36" already present on machine
+106s        Normal    Killing                 pod/evidence-fetcher                      Stopping container c
+33s         Normal    Scheduled               pod/evidence-fetcher                      Successfully assigned pre-sit/evidence-fetcher to presit-control-plane
+32s         Normal    Pulled                  pod/evidence-fetcher                      Container image "busybox:1.36" already present on machine
+32s         Normal    Created                 pod/evidence-fetcher                      Created container c
+32s         Normal    Started                 pod/evidence-fetcher                      Started container c
+31s         Normal    Killing                 pod/evidence-fetcher                      Stopping container c

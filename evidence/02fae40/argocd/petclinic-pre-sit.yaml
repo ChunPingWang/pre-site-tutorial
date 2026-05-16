@@ -1,0 +1,432 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"argoproj.io/v1alpha1","kind":"Application","metadata":{"annotations":{},"finalizers":["resources-finalizer.argocd.argoproj.io"],"name":"petclinic-pre-sit","namespace":"argocd"},"spec":{"destination":{"namespace":"pre-sit","server":"https://kubernetes.default.svc"},"project":"default","source":{"directory":{"recurse":false},"path":"manifests/pre-sit","repoURL":"https://github.com/ChunPingWang/pre-site-tutorial.git","targetRevision":"main"},"syncPolicy":{"syncOptions":["CreateNamespace=true","ServerSideApply=true"]}}}
+  creationTimestamp: "2026-05-16T10:30:41Z"
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+  generation: 72
+  name: petclinic-pre-sit
+  namespace: argocd
+  resourceVersion: "32734"
+  uid: de9e0e06-ee91-4e13-a868-eabb4d66a2ab
+spec:
+  destination:
+    namespace: pre-sit
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    path: manifests/pre-sit
+    repoURL: https://github.com/ChunPingWang/pre-site-tutorial.git
+    targetRevision: main
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true
+status:
+  controllerNamespace: argocd
+  health:
+    status: Healthy
+  history:
+  - deployStartedAt: "2026-05-16T10:30:56Z"
+    deployedAt: "2026-05-16T10:30:57Z"
+    id: 0
+    initiatedBy: {}
+    revision: fc2b93e2abcfb168accc35033d9a06502db3865d
+    source:
+      path: manifests/pre-sit
+      repoURL: https://github.com/ChunPingWang/pre-site-tutorial.git
+      targetRevision: main
+  - deployStartedAt: "2026-05-16T10:49:15Z"
+    deployedAt: "2026-05-16T10:49:16Z"
+    id: 1
+    initiatedBy: {}
+    revision: 02fae400235392f4c0090364371dff19427c2b06
+    source:
+      path: manifests/pre-sit
+      repoURL: https://github.com/ChunPingWang/pre-site-tutorial.git
+      targetRevision: main
+  operationState:
+    finishedAt: "2026-05-16T10:49:16Z"
+    message: successfully synced (all tasks run)
+    operation:
+      initiatedBy: {}
+      retry: {}
+      sync: {}
+    phase: Succeeded
+    startedAt: "2026-05-16T10:49:15Z"
+    syncResult:
+      resources:
+      - group: ""
+        hookPhase: Running
+        kind: Namespace
+        message: namespace/pre-sit unchanged
+        name: pre-sit
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: ""
+        hookPhase: Running
+        kind: ServiceAccount
+        message: serviceaccount/presit-sa configured
+        name: presit-sa
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: ""
+        hookPhase: Running
+        kind: Secret
+        message: secret/petclinic-db-credentials configured
+        name: petclinic-db-credentials
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: ""
+        hookPhase: Running
+        kind: ConfigMap
+        message: configmap/petclinic-db-config unchanged
+        name: petclinic-db-config
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: ""
+        hookPhase: Running
+        kind: PersistentVolumeClaim
+        message: persistentvolumeclaim/presit-reports configured
+        name: presit-reports
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: rbac.authorization.k8s.io
+        hookPhase: Running
+        kind: Role
+        message: role.rbac.authorization.k8s.io/presit-role reconciled. reconciliation
+          required update. role.rbac.authorization.k8s.io/presit-role configured
+        name: presit-role
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: rbac.authorization.k8s.io
+        hookPhase: Running
+        kind: RoleBinding
+        message: rolebinding.rbac.authorization.k8s.io/presit-rolebinding reconciled.
+          reconciliation required update. rolebinding.rbac.authorization.k8s.io/presit-rolebinding
+          configured
+        name: presit-rolebinding
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: ""
+        hookPhase: Running
+        kind: Service
+        message: service/visits-service unchanged
+        name: visits-service
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: ""
+        hookPhase: Running
+        kind: Service
+        message: service/vets-service unchanged
+        name: vets-service
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: ""
+        hookPhase: Running
+        kind: Service
+        message: service/customers-service unchanged
+        name: customers-service
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: ""
+        hookPhase: Running
+        kind: Service
+        message: service/postgres unchanged
+        name: postgres
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: ""
+        hookPhase: Running
+        kind: Service
+        message: service/api-gateway unchanged
+        name: api-gateway
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: apps
+        hookPhase: Running
+        kind: Deployment
+        message: deployment.apps/vets-service configured
+        name: vets-service
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: apps
+        hookPhase: Running
+        kind: Deployment
+        message: deployment.apps/api-gateway configured
+        name: api-gateway
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: apps
+        hookPhase: Running
+        kind: Deployment
+        message: deployment.apps/customers-service configured
+        name: customers-service
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: apps
+        hookPhase: Running
+        kind: Deployment
+        message: deployment.apps/visits-service configured
+        name: visits-service
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: apps
+        hookPhase: Running
+        kind: StatefulSet
+        message: statefulset.apps/postgres unchanged
+        name: postgres
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: batch
+        hookPhase: Running
+        kind: Job
+        message: job.batch/presit-phase2-application configured
+        name: presit-phase2-application
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: batch
+        hookPhase: Running
+        kind: Job
+        message: job.batch/presit-phase4-e2e-decision configured
+        name: presit-phase4-e2e-decision
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: batch
+        hookPhase: Running
+        kind: Job
+        message: job.batch/presit-phase3-integration configured
+        name: presit-phase3-integration
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: batch
+        hookPhase: Running
+        kind: Job
+        message: job.batch/presit-phase1-database configured
+        name: presit-phase1-database
+        namespace: pre-sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      revision: 02fae400235392f4c0090364371dff19427c2b06
+      source:
+        path: manifests/pre-sit
+        repoURL: https://github.com/ChunPingWang/pre-site-tutorial.git
+        targetRevision: main
+  reconciledAt: "2026-05-16T11:09:19Z"
+  resources:
+  - kind: ConfigMap
+    name: petclinic-db-config
+    namespace: pre-sit
+    status: Synced
+    version: v1
+  - kind: Namespace
+    name: pre-sit
+    status: Synced
+    version: v1
+  - health:
+      status: Healthy
+    kind: PersistentVolumeClaim
+    name: presit-reports
+    namespace: pre-sit
+    status: OutOfSync
+    version: v1
+  - kind: Secret
+    name: petclinic-db-credentials
+    namespace: pre-sit
+    status: Synced
+    version: v1
+  - health:
+      status: Healthy
+    kind: Service
+    name: api-gateway
+    namespace: pre-sit
+    status: Synced
+    version: v1
+  - health:
+      status: Healthy
+    kind: Service
+    name: customers-service
+    namespace: pre-sit
+    status: Synced
+    version: v1
+  - health:
+      status: Healthy
+    kind: Service
+    name: postgres
+    namespace: pre-sit
+    status: Synced
+    version: v1
+  - health:
+      status: Healthy
+    kind: Service
+    name: vets-service
+    namespace: pre-sit
+    status: Synced
+    version: v1
+  - health:
+      status: Healthy
+    kind: Service
+    name: visits-service
+    namespace: pre-sit
+    status: Synced
+    version: v1
+  - kind: ServiceAccount
+    name: presit-sa
+    namespace: pre-sit
+    status: OutOfSync
+    version: v1
+  - group: apps
+    health:
+      status: Healthy
+    kind: Deployment
+    name: api-gateway
+    namespace: pre-sit
+    status: Synced
+    version: v1
+  - group: apps
+    health:
+      status: Healthy
+    kind: Deployment
+    name: customers-service
+    namespace: pre-sit
+    status: Synced
+    version: v1
+  - group: apps
+    health:
+      status: Healthy
+    kind: Deployment
+    name: vets-service
+    namespace: pre-sit
+    status: Synced
+    version: v1
+  - group: apps
+    health:
+      status: Healthy
+    kind: Deployment
+    name: visits-service
+    namespace: pre-sit
+    status: Synced
+    version: v1
+  - group: apps
+    health:
+      message: 'partitioned roll out complete: 1 new pods have been updated...'
+      status: Healthy
+    kind: StatefulSet
+    name: postgres
+    namespace: pre-sit
+    status: Synced
+    version: v1
+  - group: batch
+    health:
+      message: Reached expected number of succeeded pods
+      status: Healthy
+    kind: Job
+    name: presit-phase1-database
+    namespace: pre-sit
+    status: OutOfSync
+    version: v1
+  - group: batch
+    health:
+      message: Reached expected number of succeeded pods
+      status: Healthy
+    kind: Job
+    name: presit-phase2-application
+    namespace: pre-sit
+    status: OutOfSync
+    version: v1
+  - group: batch
+    health:
+      message: Reached expected number of succeeded pods
+      status: Healthy
+    kind: Job
+    name: presit-phase3-integration
+    namespace: pre-sit
+    status: OutOfSync
+    version: v1
+  - group: batch
+    health:
+      message: Reached expected number of succeeded pods
+      status: Healthy
+    kind: Job
+    name: presit-phase4-e2e-decision
+    namespace: pre-sit
+    status: OutOfSync
+    version: v1
+  - group: rbac.authorization.k8s.io
+    kind: Role
+    name: presit-role
+    namespace: pre-sit
+    status: OutOfSync
+    version: v1
+  - group: rbac.authorization.k8s.io
+    kind: RoleBinding
+    name: presit-rolebinding
+    namespace: pre-sit
+    status: OutOfSync
+    version: v1
+  sourceType: Directory
+  summary:
+    images:
+    - bitnami/kubectl:latest
+    - busybox:1.36
+    - localhost:5000/petclinic-api-gateway:v2.2
+    - localhost:5000/petclinic-customers-service:v2.2
+    - localhost:5000/petclinic-vets-service:v2.2
+    - localhost:5000/petclinic-visits-service:v2.2
+    - localhost:5000/presit-bdd-runner:v2.2
+    - postgres:16-alpine
+  sync:
+    comparedTo:
+      destination:
+        namespace: pre-sit
+        server: https://kubernetes.default.svc
+      source:
+        path: manifests/pre-sit
+        repoURL: https://github.com/ChunPingWang/pre-site-tutorial.git
+        targetRevision: main
+    revision: 02fae400235392f4c0090364371dff19427c2b06
+    status: OutOfSync

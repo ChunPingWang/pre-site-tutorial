@@ -1,0 +1,66 @@
+name: SIT 探索性測試 Bug 回報
+description: 在 SIT 環境探索測試時發現的問題；提交後將追蹤是否補成新的 Gherkin 場景進 Pre-SIT BDD
+title: "[SIT-EXPLORE] "
+labels: ["bug", "sit-exploration"]
+body:
+  - type: input
+    id: tester
+    attributes:
+      label: 測試者
+      placeholder: 你的名字
+    validations: { required: true }
+
+  - type: input
+    id: env-sha
+    attributes:
+      label: SIT 環境的 image SHA
+      description: |
+        執行下列指令取得：
+        kubectl -n sit get deploy customers-service -o jsonpath='{.spec.template.spec.containers[0].image}'
+    validations: { required: true }
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 重現步驟
+      placeholder: |
+        1. 訪問 http://sit.local:30080/owners
+        2. 點 "Add Owner"
+        3. ...
+      value: |
+        1.
+        2.
+        3.
+        預期：
+        實際：
+    validations: { required: true }
+
+  - type: textarea
+    id: data-state
+    attributes:
+      label: SIT 資料狀態
+      description: 當下相關資料的概況（owner_id、是否有 pets、是否清過 visits 等）
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: 截圖 / 影片
+
+  - type: textarea
+    id: gherkin-draft
+    attributes:
+      label: 候選 Gherkin 場景草稿（選填）
+      description: 嘗試把此 bug 翻為 Gherkin 場景，會加速 Developer 轉成正式測試案例
+      placeholder: |
+        @api @error-handling @from-sit-${ISSUE_NUMBER}
+        場景: ...
+          當 我對 "..." 發送 ... 請求
+          那麼 ...
+
+  - type: checkboxes
+    id: workflow
+    attributes:
+      label: 後續流程
+      options:
+        - label: 我同意此 bug 應補進 Pre-SIT BDD 防止 regression
+        - label: 我已在 SIT 將測試資料清理乾淨（如有產生）

@@ -1,0 +1,384 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  annotations:
+    argocd-image-updater.argoproj.io/customers.allow-tags: regexp:^sit-approved$
+    argocd-image-updater.argoproj.io/customers.update-strategy: name
+    argocd-image-updater.argoproj.io/gateway.allow-tags: regexp:^sit-approved$
+    argocd-image-updater.argoproj.io/gateway.update-strategy: name
+    argocd-image-updater.argoproj.io/image-list: |
+      customers=localhost:5000/petclinic-customers-service,
+      vets=localhost:5000/petclinic-vets-service,
+      visits=localhost:5000/petclinic-visits-service,
+      gateway=localhost:5000/petclinic-api-gateway
+    argocd-image-updater.argoproj.io/vets.allow-tags: regexp:^sit-approved$
+    argocd-image-updater.argoproj.io/vets.update-strategy: name
+    argocd-image-updater.argoproj.io/visits.allow-tags: regexp:^sit-approved$
+    argocd-image-updater.argoproj.io/visits.update-strategy: name
+    argocd-image-updater.argoproj.io/write-back-method: argocd
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"argoproj.io/v1alpha1","kind":"Application","metadata":{"annotations":{"argocd-image-updater.argoproj.io/customers.allow-tags":"regexp:^sit-approved$","argocd-image-updater.argoproj.io/customers.update-strategy":"name","argocd-image-updater.argoproj.io/gateway.allow-tags":"regexp:^sit-approved$","argocd-image-updater.argoproj.io/gateway.update-strategy":"name","argocd-image-updater.argoproj.io/image-list":"customers=localhost:5000/petclinic-customers-service,\nvets=localhost:5000/petclinic-vets-service,\nvisits=localhost:5000/petclinic-visits-service,\ngateway=localhost:5000/petclinic-api-gateway\n","argocd-image-updater.argoproj.io/vets.allow-tags":"regexp:^sit-approved$","argocd-image-updater.argoproj.io/vets.update-strategy":"name","argocd-image-updater.argoproj.io/visits.allow-tags":"regexp:^sit-approved$","argocd-image-updater.argoproj.io/visits.update-strategy":"name","argocd-image-updater.argoproj.io/write-back-method":"argocd"},"finalizers":["resources-finalizer.argocd.argoproj.io"],"name":"petclinic-sit","namespace":"argocd"},"spec":{"destination":{"namespace":"sit","server":"https://kubernetes.default.svc"},"ignoreDifferences":[{"group":"apps","jsonPointers":["/spec/volumeClaimTemplates"],"kind":"StatefulSet"}],"project":"default","source":{"directory":{"recurse":false},"path":"manifests/sit","repoURL":"https://github.com/ChunPingWang/pre-site-tutorial.git","targetRevision":"main"},"syncPolicy":{"automated":{"prune":false,"selfHeal":true},"syncOptions":["CreateNamespace=true","ServerSideApply=true"]}}}
+  creationTimestamp: "2026-05-16T10:30:41Z"
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+  generation: 75
+  name: petclinic-sit
+  namespace: argocd
+  resourceVersion: "32732"
+  uid: 57ca3a36-7fc0-419a-b5a3-df7132bd32c8
+spec:
+  destination:
+    namespace: sit
+    server: https://kubernetes.default.svc
+  ignoreDifferences:
+  - group: apps
+    jsonPointers:
+    - /spec/volumeClaimTemplates
+    kind: StatefulSet
+  project: default
+  source:
+    kustomize:
+      images:
+      - localhost:5000/petclinic-customers-service:sit-approved
+      - localhost:5000/petclinic-vets-service:sit-approved
+      - localhost:5000/petclinic-visits-service:sit-approved
+      - localhost:5000/petclinic-api-gateway:sit-approved
+    path: manifests/sit
+    repoURL: https://github.com/ChunPingWang/pre-site-tutorial.git
+    targetRevision: main
+  syncPolicy:
+    automated:
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true
+status:
+  controllerNamespace: argocd
+  health:
+    status: Healthy
+  history:
+  - deployStartedAt: "2026-05-16T10:30:44Z"
+    deployedAt: "2026-05-16T10:30:44Z"
+    id: 0
+    initiatedBy:
+      automated: true
+    revision: fc2b93e2abcfb168accc35033d9a06502db3865d
+    source:
+      path: manifests/sit
+      repoURL: https://github.com/ChunPingWang/pre-site-tutorial.git
+      targetRevision: main
+  - deployStartedAt: "2026-05-16T10:34:53Z"
+    deployedAt: "2026-05-16T10:34:53Z"
+    id: 1
+    initiatedBy:
+      automated: true
+    revision: 03c15123f312202eb10506d8c5fb7fa136662c45
+    source:
+      kustomize:
+        images:
+        - localhost:5000/petclinic-api-gateway:sit-approved
+      path: manifests/sit
+      repoURL: https://github.com/ChunPingWang/pre-site-tutorial.git
+      targetRevision: main
+  - deployStartedAt: "2026-05-16T10:35:53Z"
+    deployedAt: "2026-05-16T10:35:53Z"
+    id: 2
+    initiatedBy:
+      automated: true
+    revision: 03c15123f312202eb10506d8c5fb7fa136662c45
+    source:
+      kustomize:
+        images:
+        - localhost:5000/petclinic-customers-service:sit-approved
+        - localhost:5000/petclinic-vets-service:sit-approved
+        - localhost:5000/petclinic-visits-service:sit-approved
+        - localhost:5000/petclinic-api-gateway:sit-approved
+      path: manifests/sit
+      repoURL: https://github.com/ChunPingWang/pre-site-tutorial.git
+      targetRevision: main
+  operationState:
+    finishedAt: "2026-05-16T10:35:53Z"
+    message: successfully synced (all tasks run)
+    operation:
+      initiatedBy:
+        automated: true
+      retry:
+        limit: 5
+      sync:
+        revision: 03c15123f312202eb10506d8c5fb7fa136662c45
+        syncOptions:
+        - CreateNamespace=true
+        - ServerSideApply=true
+    phase: Succeeded
+    startedAt: "2026-05-16T10:35:53Z"
+    syncResult:
+      resources:
+      - group: ""
+        hookPhase: Running
+        kind: Namespace
+        message: namespace/sit serverside-applied
+        name: sit
+        namespace: sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: ""
+        hookPhase: Running
+        kind: Secret
+        message: secret/petclinic-db-credentials serverside-applied
+        name: petclinic-db-credentials
+        namespace: sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: ""
+        hookPhase: Running
+        kind: ConfigMap
+        message: configmap/petclinic-db-config serverside-applied
+        name: petclinic-db-config
+        namespace: sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: ""
+        hookPhase: Running
+        kind: Service
+        message: service/api-gateway serverside-applied
+        name: api-gateway
+        namespace: sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: ""
+        hookPhase: Running
+        kind: Service
+        message: service/postgres serverside-applied
+        name: postgres
+        namespace: sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: ""
+        hookPhase: Running
+        kind: Service
+        message: service/vets-service serverside-applied
+        name: vets-service
+        namespace: sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: ""
+        hookPhase: Running
+        kind: Service
+        message: service/customers-service serverside-applied
+        name: customers-service
+        namespace: sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: ""
+        hookPhase: Running
+        kind: Service
+        message: service/visits-service serverside-applied
+        name: visits-service
+        namespace: sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: apps
+        hookPhase: Running
+        kind: Deployment
+        message: deployment.apps/customers-service serverside-applied
+        name: customers-service
+        namespace: sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: apps
+        hookPhase: Running
+        kind: Deployment
+        message: deployment.apps/visits-service serverside-applied
+        name: visits-service
+        namespace: sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: apps
+        hookPhase: Running
+        kind: Deployment
+        message: deployment.apps/vets-service serverside-applied
+        name: vets-service
+        namespace: sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: apps
+        hookPhase: Running
+        kind: Deployment
+        message: deployment.apps/api-gateway serverside-applied
+        name: api-gateway
+        namespace: sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: apps
+        hookPhase: Running
+        kind: StatefulSet
+        message: statefulset.apps/postgres serverside-applied
+        name: postgres
+        namespace: sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      - group: networking.k8s.io
+        hookPhase: Running
+        kind: Ingress
+        message: ingress.networking.k8s.io/petclinic serverside-applied
+        name: petclinic
+        namespace: sit
+        status: Synced
+        syncPhase: Sync
+        version: v1
+      revision: 03c15123f312202eb10506d8c5fb7fa136662c45
+      source:
+        kustomize:
+          images:
+          - localhost:5000/petclinic-customers-service:sit-approved
+          - localhost:5000/petclinic-vets-service:sit-approved
+          - localhost:5000/petclinic-visits-service:sit-approved
+          - localhost:5000/petclinic-api-gateway:sit-approved
+        path: manifests/sit
+        repoURL: https://github.com/ChunPingWang/pre-site-tutorial.git
+        targetRevision: main
+  reconciledAt: "2026-05-16T11:09:19Z"
+  resources:
+  - kind: ConfigMap
+    name: petclinic-db-config
+    namespace: sit
+    status: Synced
+    version: v1
+  - kind: Namespace
+    name: sit
+    status: Synced
+    version: v1
+  - kind: Secret
+    name: petclinic-db-credentials
+    namespace: sit
+    status: Synced
+    version: v1
+  - health:
+      status: Healthy
+    kind: Service
+    name: api-gateway
+    namespace: sit
+    status: Synced
+    version: v1
+  - health:
+      status: Healthy
+    kind: Service
+    name: customers-service
+    namespace: sit
+    status: Synced
+    version: v1
+  - health:
+      status: Healthy
+    kind: Service
+    name: postgres
+    namespace: sit
+    status: Synced
+    version: v1
+  - health:
+      status: Healthy
+    kind: Service
+    name: vets-service
+    namespace: sit
+    status: Synced
+    version: v1
+  - health:
+      status: Healthy
+    kind: Service
+    name: visits-service
+    namespace: sit
+    status: Synced
+    version: v1
+  - group: apps
+    health:
+      status: Healthy
+    kind: Deployment
+    name: api-gateway
+    namespace: sit
+    status: Synced
+    version: v1
+  - group: apps
+    health:
+      status: Healthy
+    kind: Deployment
+    name: customers-service
+    namespace: sit
+    status: Synced
+    version: v1
+  - group: apps
+    health:
+      status: Healthy
+    kind: Deployment
+    name: vets-service
+    namespace: sit
+    status: Synced
+    version: v1
+  - group: apps
+    health:
+      status: Healthy
+    kind: Deployment
+    name: visits-service
+    namespace: sit
+    status: Synced
+    version: v1
+  - group: apps
+    health:
+      message: 'partitioned roll out complete: 1 new pods have been updated...'
+      status: Healthy
+    kind: StatefulSet
+    name: postgres
+    namespace: sit
+    status: Synced
+    version: v1
+  - group: networking.k8s.io
+    health:
+      status: Healthy
+    kind: Ingress
+    name: petclinic
+    namespace: sit
+    status: Synced
+    version: v1
+  sourceType: Kustomize
+  summary:
+    externalURLs:
+    - http://sit.local/
+    images:
+    - localhost:5000/petclinic-api-gateway:sit-approved
+    - localhost:5000/petclinic-customers-service:sit-approved
+    - localhost:5000/petclinic-vets-service:sit-approved
+    - localhost:5000/petclinic-visits-service:sit-approved
+    - postgres:16-alpine
+  sync:
+    comparedTo:
+      destination:
+        namespace: sit
+        server: https://kubernetes.default.svc
+      ignoreDifferences:
+      - group: apps
+        jsonPointers:
+        - /spec/volumeClaimTemplates
+        kind: StatefulSet
+      source:
+        kustomize:
+          images:
+          - localhost:5000/petclinic-customers-service:sit-approved
+          - localhost:5000/petclinic-vets-service:sit-approved
+          - localhost:5000/petclinic-visits-service:sit-approved
+          - localhost:5000/petclinic-api-gateway:sit-approved
+        path: manifests/sit
+        repoURL: https://github.com/ChunPingWang/pre-site-tutorial.git
+        targetRevision: main
+    revision: 02fae400235392f4c0090364371dff19427c2b06
+    status: Synced

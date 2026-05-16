@@ -1,0 +1,84 @@
+LAST SEEN   TYPE      REASON                  OBJECT                                    MESSAGE
+45m         Normal    SuccessfulCreate        statefulset/postgres                      create Claim data-postgres-0 Pod postgres-0 in StatefulSet postgres success
+45m         Normal    SuccessfulCreate        statefulset/postgres                      create Pod postgres-0 in StatefulSet postgres successful
+45m         Normal    ExternalProvisioning    persistentvolumeclaim/data-postgres-0     Waiting for a volume to be created either by the external provisioner 'rancher.io/local-path' or manually by the system administrator. If volume creation is delayed, please verify that the provisioner is running and correctly registered.
+45m         Normal    Provisioning            persistentvolumeclaim/data-postgres-0     External provisioner is provisioning volume for claim "sit/data-postgres-0"
+45m         Normal    Scheduled               pod/api-gateway-59c784bd86-pgbqs          Successfully assigned sit/api-gateway-59c784bd86-pgbqs to presit-control-plane
+45m         Normal    ScalingReplicaSet       deployment/visits-service                 Scaled up replica set visits-service-698898ff99 to 1
+45m         Normal    SuccessfulCreate        replicaset/visits-service-698898ff99      Created pod: visits-service-698898ff99-2gg27
+45m         Normal    SuccessfulCreate        replicaset/api-gateway-59c784bd86         Created pod: api-gateway-59c784bd86-pgbqs
+45m         Normal    ScalingReplicaSet       deployment/customers-service              Scaled up replica set customers-service-54d78b6cf7 to 1
+45m         Normal    Scheduled               pod/vets-service-867f77fb4c-b26m9         Successfully assigned sit/vets-service-867f77fb4c-b26m9 to presit-control-plane
+45m         Normal    Scheduled               pod/customers-service-54d78b6cf7-qvflp    Successfully assigned sit/customers-service-54d78b6cf7-qvflp to presit-control-plane
+45m         Normal    SuccessfulCreate        replicaset/customers-service-54d78b6cf7   Created pod: customers-service-54d78b6cf7-qvflp
+45m         Normal    Scheduled               pod/visits-service-698898ff99-2gg27       Successfully assigned sit/visits-service-698898ff99-2gg27 to presit-control-plane
+45m         Normal    ScalingReplicaSet       deployment/vets-service                   Scaled up replica set vets-service-867f77fb4c to 1
+45m         Normal    SuccessfulCreate        replicaset/vets-service-867f77fb4c        Created pod: vets-service-867f77fb4c-b26m9
+45m         Normal    ScalingReplicaSet       deployment/api-gateway                    Scaled up replica set api-gateway-59c784bd86 to 1
+45m         Normal    WaitForFirstConsumer    persistentvolumeclaim/data-postgres-0     waiting for first consumer to be created before binding
+45m         Normal    Started                 pod/vets-service-867f77fb4c-b26m9         Started container app
+45m         Normal    Pulled                  pod/visits-service-698898ff99-2gg27       Successfully pulled image "localhost:5000/petclinic-visits-service:v2.2" in 21ms (23ms including waiting). Image size: 119831278 bytes.
+45m         Normal    Pulling                 pod/customers-service-54d78b6cf7-qvflp    Pulling image "localhost:5000/petclinic-customers-service:v2.2"
+45m         Normal    Pulled                  pod/customers-service-54d78b6cf7-qvflp    Successfully pulled image "localhost:5000/petclinic-customers-service:v2.2" in 18ms (18ms including waiting). Image size: 119839819 bytes.
+45m         Normal    Created                 pod/customers-service-54d78b6cf7-qvflp    Created container app
+45m         Normal    Started                 pod/customers-service-54d78b6cf7-qvflp    Started container app
+45m         Normal    Pulled                  pod/vets-service-867f77fb4c-b26m9         Successfully pulled image "localhost:5000/petclinic-vets-service:v2.2" in 20ms (30ms including waiting). Image size: 120739217 bytes.
+45m         Normal    Pulling                 pod/vets-service-867f77fb4c-b26m9         Pulling image "localhost:5000/petclinic-vets-service:v2.2"
+45m         Normal    Pulling                 pod/visits-service-698898ff99-2gg27       Pulling image "localhost:5000/petclinic-visits-service:v2.2"
+45m         Normal    Created                 pod/vets-service-867f77fb4c-b26m9         Created container app
+45m         Normal    Created                 pod/visits-service-698898ff99-2gg27       Created container app
+45m         Normal    Started                 pod/visits-service-698898ff99-2gg27       Started container app
+45m         Normal    Started                 pod/api-gateway-59c784bd86-pgbqs          Started container app
+45m         Normal    Pulling                 pod/api-gateway-59c784bd86-pgbqs          Pulling image "localhost:5000/petclinic-api-gateway:v2.2"
+45m         Normal    Created                 pod/api-gateway-59c784bd86-pgbqs          Created container app
+45m         Normal    Pulled                  pod/api-gateway-59c784bd86-pgbqs          Successfully pulled image "localhost:5000/petclinic-api-gateway:v2.2" in 20ms (20ms including waiting). Image size: 112744075 bytes.
+45m         Normal    ProvisioningSucceeded   persistentvolumeclaim/data-postgres-0     Successfully provisioned volume pvc-4fd6826e-dff3-489c-9814-bd2680a56b58
+45m         Normal    Scheduled               pod/postgres-0                            Successfully assigned sit/postgres-0 to presit-control-plane
+45m         Normal    Pulled                  pod/postgres-0                            Container image "postgres:16-alpine" already present on machine
+45m         Normal    Created                 pod/postgres-0                            Created container postgres
+45m         Normal    Started                 pod/postgres-0                            Started container postgres
+44m         Warning   Unhealthy               pod/api-gateway-59c784bd86-pgbqs          Readiness probe failed: Get "http://10.244.0.83:8080/actuator/health": dial tcp 10.244.0.83:8080: connect: connection refused
+44m         Warning   Unhealthy               pod/visits-service-698898ff99-2gg27       Readiness probe failed: Get "http://10.244.0.82:8082/actuator/health": dial tcp 10.244.0.82:8082: connect: connection refused
+44m         Warning   Unhealthy               pod/vets-service-867f77fb4c-b26m9         Readiness probe failed: Get "http://10.244.0.81:8083/actuator/health": dial tcp 10.244.0.81:8083: connect: connection refused
+33m         Warning   Unhealthy               pod/customers-service-54d78b6cf7-qvflp    Readiness probe failed: Get "http://10.244.0.80:8081/actuator/health": dial tcp 10.244.0.80:8081: connect: connection refused
+39m         Normal    Sync                    ingress/petclinic                         Scheduled for sync
+35m         Normal    Scheduled               pod/api-gateway-5fc858bdf8-8mztz          Successfully assigned sit/api-gateway-5fc858bdf8-8mztz to presit-control-plane
+35m         Normal    SuccessfulCreate        replicaset/api-gateway-5fc858bdf8         Created pod: api-gateway-5fc858bdf8-8mztz
+35m         Normal    ScalingReplicaSet       deployment/api-gateway                    Scaled up replica set api-gateway-5fc858bdf8 to 1
+35m         Normal    Started                 pod/api-gateway-5fc858bdf8-8mztz          Started container app
+35m         Normal    Created                 pod/api-gateway-5fc858bdf8-8mztz          Created container app
+35m         Normal    Pulling                 pod/api-gateway-5fc858bdf8-8mztz          Pulling image "localhost:5000/petclinic-api-gateway:sit-approved"
+35m         Normal    Pulled                  pod/api-gateway-5fc858bdf8-8mztz          Successfully pulled image "localhost:5000/petclinic-api-gateway:sit-approved" in 20ms (20ms including waiting). Image size: 112744075 bytes.
+34m         Normal    SuccessfulDelete        replicaset/api-gateway-59c784bd86         Deleted pod: api-gateway-59c784bd86-pgbqs
+34m         Normal    ScalingReplicaSet       deployment/api-gateway                    Scaled down replica set api-gateway-59c784bd86 to 0 from 1
+34m         Normal    Killing                 pod/api-gateway-59c784bd86-pgbqs          Stopping container app
+34m         Normal    SuccessfulCreate        replicaset/visits-service-84d8899987      Created pod: visits-service-84d8899987-sbsrh
+34m         Normal    SuccessfulCreate        replicaset/customers-service-6594b9fc45   Created pod: customers-service-6594b9fc45-4jgnc
+34m         Normal    Pulling                 pod/visits-service-84d8899987-sbsrh       Pulling image "localhost:5000/petclinic-visits-service:sit-approved"
+34m         Normal    Scheduled               pod/vets-service-b49bbb8f5-vcfdk          Successfully assigned sit/vets-service-b49bbb8f5-vcfdk to presit-control-plane
+34m         Normal    Pulling                 pod/vets-service-b49bbb8f5-vcfdk          Pulling image "localhost:5000/petclinic-vets-service:sit-approved"
+34m         Normal    Pulled                  pod/vets-service-b49bbb8f5-vcfdk          Successfully pulled image "localhost:5000/petclinic-vets-service:sit-approved" in 16ms (16ms including waiting). Image size: 120739217 bytes.
+34m         Normal    Scheduled               pod/customers-service-6594b9fc45-4jgnc    Successfully assigned sit/customers-service-6594b9fc45-4jgnc to presit-control-plane
+34m         Normal    ScalingReplicaSet       deployment/customers-service              Scaled up replica set customers-service-6594b9fc45 to 1
+34m         Normal    SuccessfulCreate        replicaset/vets-service-b49bbb8f5         Created pod: vets-service-b49bbb8f5-vcfdk
+34m         Normal    Scheduled               pod/visits-service-84d8899987-sbsrh       Successfully assigned sit/visits-service-84d8899987-sbsrh to presit-control-plane
+34m         Normal    ScalingReplicaSet       deployment/vets-service                   Scaled up replica set vets-service-b49bbb8f5 to 1
+34m         Normal    Pulling                 pod/customers-service-6594b9fc45-4jgnc    Pulling image "localhost:5000/petclinic-customers-service:sit-approved"
+34m         Normal    ScalingReplicaSet       deployment/visits-service                 Scaled up replica set visits-service-84d8899987 to 1
+34m         Normal    Created                 pod/vets-service-b49bbb8f5-vcfdk          Created container app
+34m         Normal    Pulled                  pod/customers-service-6594b9fc45-4jgnc    Successfully pulled image "localhost:5000/petclinic-customers-service:sit-approved" in 26ms (62ms including waiting). Image size: 119839819 bytes.
+34m         Normal    Created                 pod/customers-service-6594b9fc45-4jgnc    Created container app
+34m         Normal    Created                 pod/visits-service-84d8899987-sbsrh       Created container app
+34m         Normal    Started                 pod/vets-service-b49bbb8f5-vcfdk          Started container app
+34m         Normal    Pulled                  pod/visits-service-84d8899987-sbsrh       Successfully pulled image "localhost:5000/petclinic-visits-service:sit-approved" in 19ms (36ms including waiting). Image size: 119831278 bytes.
+34m         Normal    Started                 pod/customers-service-6594b9fc45-4jgnc    Started container app
+34m         Normal    Started                 pod/visits-service-84d8899987-sbsrh       Started container app
+33m         Normal    SuccessfulDelete        replicaset/customers-service-54d78b6cf7   Deleted pod: customers-service-54d78b6cf7-qvflp
+33m         Normal    SuccessfulDelete        replicaset/visits-service-698898ff99      Deleted pod: visits-service-698898ff99-2gg27
+33m         Normal    Killing                 pod/visits-service-698898ff99-2gg27       Stopping container app
+33m         Normal    ScalingReplicaSet       deployment/vets-service                   Scaled down replica set vets-service-867f77fb4c to 0 from 1
+33m         Normal    SuccessfulDelete        replicaset/vets-service-867f77fb4c        Deleted pod: vets-service-867f77fb4c-b26m9
+33m         Normal    Killing                 pod/vets-service-867f77fb4c-b26m9         Stopping container app
+33m         Normal    Killing                 pod/customers-service-54d78b6cf7-qvflp    Stopping container app
+33m         Normal    ScalingReplicaSet       deployment/customers-service              Scaled down replica set customers-service-54d78b6cf7 to 0 from 1
+33m         Normal    ScalingReplicaSet       deployment/visits-service                 Scaled down replica set visits-service-698898ff99 to 0 from 1

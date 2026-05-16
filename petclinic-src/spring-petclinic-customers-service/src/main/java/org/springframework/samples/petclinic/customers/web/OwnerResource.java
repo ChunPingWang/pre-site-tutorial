@@ -55,10 +55,16 @@ class OwnerResource {
 
     /**
      * Read single Owner
+     *
+     * v2.2 Stage D.2: 改丟 ResourceNotFoundException 而非回 Optional.empty()，
+     * 讓「找不到的 owner」回 HTTP 404 (符合 RESTful 慣例 + Phase 3 BDD 期待)。
+     * 這是 upstream PetClinic v3.2.0 的 v2.1 known-issue，
+     * 因 v2.2 我們自己 build，可以修這個行為。
      */
     @GetMapping(value = "/{ownerId}")
-    public Optional<Owner> findOwner(@PathVariable("ownerId") @Min(1) int ownerId) {
-        return ownerRepository.findById(ownerId);
+    public Owner findOwner(@PathVariable("ownerId") @Min(1) int ownerId) {
+        return ownerRepository.findById(ownerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Owner " + ownerId + " not found"));
     }
 
     /**

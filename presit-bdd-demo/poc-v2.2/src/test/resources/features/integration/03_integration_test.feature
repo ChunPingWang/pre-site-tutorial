@@ -124,10 +124,10 @@
     並且 至少一位獸醫應擁有 specialties 資料
 
   # ─── 邊界值與異常處理 ──────────────────────────
-  # v2.2: 因為我們自己 build PetClinic，預期之後可以加 @ExceptionHandler 讓 404 真的回 404；
-  #       但 v2.2 Stage D 階段尚未動 controller，先保留 @known-issue 標記，
-  #       等 Stage D.2 (PetClinic source 加 404 handler) 完成後拿掉。
-  @api @error-handling @boundary @known-issue
+  # v2.2 Stage D.2: 已修改 OwnerResource.findOwner 拋 ResourceNotFoundException
+  # (該 exception class 標 @ResponseStatus(NOT_FOUND))，現在 404 真的回 404。
+  # 移除 v2.1 時加的 @known-issue tag。
+  @api @error-handling @boundary
   場景: 查詢不存在的 Owner 應返回 404
     當 我對 "/api/customer/owners/99999" 發送 GET 請求
     那麼 HTTP 狀態碼應為 404

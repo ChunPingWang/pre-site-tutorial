@@ -1,0 +1,7 @@
+ version |         description          | success 
+---------+------------------------------+---------
+         | << Flyway Schema Creation >> | t
+ 1       | init schema                  | t
+ 2       | seed data                    | t
+(3 rows)
+
