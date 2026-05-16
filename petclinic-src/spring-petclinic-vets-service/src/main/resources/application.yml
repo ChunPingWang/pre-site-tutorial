@@ -1,16 +1,72 @@
+# vets-service — v2.2
+
 spring:
   application:
     name: vets-service
-  config:
-    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888/}
   cache:
     cache-names: vets
-  profiles:
-    active: production
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: vets_schema
+
+server:
+  port: 8083
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+logging:
+  level:
+    org.springframework: INFO
+    org.flywaydb: INFO
 
 ---
 spring:
   config:
     activate:
-      on-profile: docker
-    import: configserver:http://config-server:8888
+      on-profile: presit
+  datasource:
+    url:      jdbc:postgresql://${POSTGRES_HOST:postgres}:5432/${POSTGRES_DB:petclinic}?currentSchema=vets_schema
+    username: ${POSTGRES_USER:petclinic}
+    password: ${POSTGRES_PASSWORD:petclinic}
+    hikari:
+      maximum-pool-size: 5
+  flyway:
+    enabled: true
+    schemas: vets_schema
+    default-schema: vets_schema
+    create-schemas: true
+    baseline-on-migrate: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: sit
+  datasource:
+    url:      jdbc:postgresql://${POSTGRES_HOST:postgres}:5432/${POSTGRES_DB:petclinic}?currentSchema=vets_schema
+    username: ${POSTGRES_USER:petclinic}
+    password: ${POSTGRES_PASSWORD:petclinic}
+    hikari:
+      maximum-pool-size: 10
+  flyway:
+    enabled: true
+    schemas: vets_schema
+    default-schema: vets_schema
+    create-schemas: true
+    baseline-on-migrate: true

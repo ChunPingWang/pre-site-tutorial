@@ -1,35 +1,60 @@
+# api-gateway — v2.2
+# Route uri 由 lb://service-name（Eureka）改為 K8s Service DNS
+# 由 K8s ConfigMap 注入 *_SERVICE_URI env var，若未設則 fallback 到同 namespace 內的 service name
+
 spring:
   application:
     name: api-gateway
-  config:
-    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888/}
   cloud:
     gateway:
       routes:
         - id: vets-service
-          uri: lb://vets-service
+          uri: ${VETS_SERVICE_URI:http://vets-service:8083}
           predicates:
             - Path=/api/vet/**
           filters:
             - StripPrefix=2
         - id: visits-service
-          uri: lb://visits-service
+          uri: ${VISITS_SERVICE_URI:http://visits-service:8082}
           predicates:
             - Path=/api/visit/**
           filters:
             - StripPrefix=2
         - id: customers-service
-          uri: lb://customers-service
+          uri: ${CUSTOMERS_SERVICE_URI:http://customers-service:8081}
           predicates:
             - Path=/api/customer/**
           filters:
             - StripPrefix=2
 
+server:
+  port: 8080
+  shutdown: graceful
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    org.springframework: INFO
+    org.springframework.cloud.gateway: INFO
 
 ---
 spring:
   config:
     activate:
-      on-profile: docker
-    import: configserver:http://config-server:8888
+      on-profile: presit
+# Pre-SIT 用 default route URIs（同 namespace 內的 service DNS）
+
+---
+spring:
+  config:
+    activate:
+      on-profile: sit
+# SIT 用 default route URIs；如需 override，由 ConfigMap 注入 *_SERVICE_URI

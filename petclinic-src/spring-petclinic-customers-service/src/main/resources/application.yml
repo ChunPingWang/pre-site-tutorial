@@ -1,13 +1,72 @@
+# customers-service — v2.2
+# 移除 Spring Cloud Config 與 Eureka，改用 K8s ConfigMap + Service DNS
+# DataSource 與 Flyway schema 由 SPRING_PROFILES_ACTIVE = presit 或 sit 切換
+
 spring:
   application:
     name: customers-service
-  config:
-    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888/}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate     # schema 由 Flyway 管，Hibernate 只驗證 entity 對應
+    properties:
+      hibernate:
+        default_schema: customers_schema
 
+server:
+  port: 8081
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always   # v2.1 PoC 已驗證必要
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+logging:
+  level:
+    org.springframework: INFO
+    org.flywaydb: INFO
 
 ---
 spring:
   config:
     activate:
-      on-profile: docker
-    import: configserver:http://config-server:8888
+      on-profile: presit
+  datasource:
+    url:      jdbc:postgresql://${POSTGRES_HOST:postgres}:5432/${POSTGRES_DB:petclinic}?currentSchema=customers_schema
+    username: ${POSTGRES_USER:petclinic}
+    password: ${POSTGRES_PASSWORD:petclinic}
+    hikari:
+      maximum-pool-size: 5
+  flyway:
+    enabled: true
+    schemas: customers_schema
+    default-schema: customers_schema
+    create-schemas: true
+    baseline-on-migrate: false  # Pre-SIT DB 每次 deploy 重建，從 V1 全跑
+
+---
+spring:
+  config:
+    activate:
+      on-profile: sit
+  datasource:
+    url:      jdbc:postgresql://${POSTGRES_HOST:postgres}:5432/${POSTGRES_DB:petclinic}?currentSchema=customers_schema
+    username: ${POSTGRES_USER:petclinic}
+    password: ${POSTGRES_PASSWORD:petclinic}
+    hikari:
+      maximum-pool-size: 10
+  flyway:
+    enabled: true
+    schemas: customers_schema
+    default-schema: customers_schema
+    create-schemas: true
+    baseline-on-migrate: true   # SIT 首次部署可能 DB 已有資料；後續以 history 表自動判斷
