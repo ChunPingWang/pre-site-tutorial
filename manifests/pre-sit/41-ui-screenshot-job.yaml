@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: presit-ui-screenshot
+  namespace: pre-sit
+spec:
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: playwright
+        image: mcr.microsoft.com/playwright/python:v1.44.0-jammy
+        command: ["python3", "/scripts/screenshot.py"]
+        env:
+        - name: BASE_URL
+          value: http://api-gateway.pre-sit.svc:8080
+        volumeMounts:
+        - name: reports
+          mountPath: /reports
+        - name: scripts
+          mountPath: /scripts
+        resources:
+          requests: { cpu: 200m, memory: 512Mi }
+          limits:   { memory: 1Gi }
+      volumes:
+      - name: reports
+        persistentVolumeClaim:
+          claimName: presit-reports
+      - name: scripts
+        configMap:
+          name: ui-screenshot-script

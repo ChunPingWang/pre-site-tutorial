@@ -1,0 +1,179 @@
+# ── ConfigMap：Playwright Python 截圖腳本 ─────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ui-screenshot-script
+  namespace: pre-sit
+data:
+  screenshot.py: |
+    #!/usr/bin/env python3
+    import os, base64, datetime
+    from playwright.sync_api import sync_playwright
+
+    BASE_URL = os.environ.get("BASE_URL", "http://api-gateway.pre-sit.svc:8080")
+    REPORT_DIR = "/reports/ui-screenshots"
+    os.makedirs(REPORT_DIR, exist_ok=True)
+
+    PAGES = [
+        ("首頁",       "/"),
+        ("主人列表",    "/owners"),
+        ("獸醫列表",    "/vets.html"),
+        ("新增就診紀錄", "/owners/1/pets/1/visits/new"),
+    ]
+
+    results = []
+    ts = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    print(f"[ui] 目標: {BASE_URL}")
+    print(f"[ui] 報告: {REPORT_DIR}/index.html")
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(args=["--no-sandbox", "--disable-dev-shm-usage"])
+        page = browser.new_context(viewport={"width": 1280, "height": 900}).new_page()
+
+        for name, path in PAGES:
+            url = BASE_URL + path
+            print(f"\n[ui] 截圖: {name}  →  {url}")
+            try:
+                page.goto(url, timeout=20000, wait_until="networkidle")
+                png = page.screenshot(full_page=True)
+                fname = name.replace(" ", "_") + ".png"
+                open(f"{REPORT_DIR}/{fname}", "wb").write(png)
+                results.append({
+                    "name": name, "url": url,
+                    "img": base64.b64encode(png).decode(),
+                    "ok": True,
+                })
+                print(f"  ✅ {fname}  ({len(png)//1024} KB)")
+            except Exception as e:
+                print(f"  ❌ 失敗: {e}")
+                results.append({"name": name, "url": url, "img": "", "ok": False, "err": str(e)})
+
+        browser.close()
+
+    # ── 產生 HTML 報告（截圖 base64 內嵌）────────────────────────────────────────
+    rows = ""
+    for r in results:
+        icon = "✅" if r["ok"] else "❌"
+        body = (
+            f'<img src="data:image/png;base64,{r["img"]}" alt="{r["name"]}">'
+            if r["img"] else
+            f'<p class="err">截圖失敗：{r.get("err","")}</p>'
+        )
+        rows += f"""
+    <section>
+      <h2>{icon} {r["name"]}</h2>
+      <p class="url"><code>{r["url"]}</code></p>
+      {body}
+    </section>"""
+
+    passed = sum(1 for r in results if r["ok"])
+    summary_cls = "pass" if passed == len(results) else "fail"
+
+    html = f"""<!DOCTYPE html>
+    <html lang="zh-TW">
+    <head>
+      <meta charset="UTF-8">
+      <title>Pre-SIT UI Screenshot Report</title>
+      <style>
+        body      {{ font-family: system-ui, sans-serif; margin: 40px; background: #f0f2f5; color: #222; }}
+        h1        {{ margin-bottom: .2em; }}
+        .meta     {{ color: #666; font-size: .9em; margin-bottom: 2em; }}
+        .summary  {{ display: inline-block; padding: 6px 18px; border-radius: 20px;
+                     font-weight: bold; margin-bottom: 1.5em; }}
+        .pass     {{ background: #d4edda; color: #155724; }}
+        .fail     {{ background: #f8d7da; color: #721c24; }}
+        section   {{ background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px;
+                     box-shadow: 0 2px 8px rgba(0,0,0,.08); }}
+        section h2 {{ margin-top: 0; font-size: 1.05em; }}
+        .url      {{ color: #888; font-size: .85em; margin-bottom: 10px; }}
+        img       {{ max-width: 100%; border: 1px solid #ddd; border-radius: 4px; margin-top: 8px; }}
+        .err      {{ color: #c0392b; }}
+      </style>
+    </head>
+    <body>
+      <h1>🖥 Pre-SIT UI Screenshot Report</h1>
+      <div class="meta">生成時間：{ts}　|　目標：{BASE_URL}</div>
+      <div class="summary {summary_cls}">{passed}/{len(results)} 頁截圖成功</div>
+      {rows}
+    </body>
+    </html>"""
+
+    open(f"{REPORT_DIR}/index.html", "w").write(html)
+    print(f"\n✅ 報告已生成：{REPORT_DIR}/index.html  ({passed}/{len(results)} 頁截圖成功)")
+    print(f"   http://presit-report.local:30080/ui-screenshots/index.html")
+---
+# ── Report Server：nginx 常駐，服務 presit-reports PVC ────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: report-server
+  namespace: pre-sit
+  labels:
+    app: report-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: report-server
+  template:
+    metadata:
+      labels:
+        app: report-server
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.27-alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: reports
+          mountPath: /usr/share/nginx/html
+          readOnly: true
+        resources:
+          requests: { cpu: 10m, memory: 16Mi }
+          limits:   { memory: 64Mi }
+      # PVC 不存在時不卡死 Pod 啟動
+      initContainers:
+      - name: wait-pvc
+        image: busybox:1.36
+        command: [sh, -c, "until [ -d /reports ]; do sleep 2; done"]
+        volumeMounts:
+        - name: reports
+          mountPath: /reports
+      volumes:
+      - name: reports
+        persistentVolumeClaim:
+          claimName: presit-reports
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: report-server
+  namespace: pre-sit
+spec:
+  selector:
+    app: report-server
+  ports:
+  - port: 80
+    targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: report-server
+  namespace: pre-sit
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: presit-report.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: report-server
+            port:
+              number: 80

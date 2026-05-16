@@ -35,6 +35,8 @@ spec:
         template: apply-bdd-jobs
     - - name: wait-phase4
         template: wait-phase4
+    - - name: ui-screenshot
+        template: ui-screenshot
     - - name: read-decision
         template: read-decision
     - - name: check-sit-state
@@ -71,6 +73,8 @@ spec:
         echo "=== 清除舊 BDD Jobs ==="
         kubectl delete jobs -n "${NS}" -l app=presit-validation 2>&1 | head -10 || true
         echo "=== 清除舊 Reports PVC ==="
+        kubectl scale deployment report-server -n "${NS}" --replicas=0 2>/dev/null || true
+        kubectl wait pod -n "${NS}" -l app=report-server --for=delete --timeout=30s 2>/dev/null || true
         kubectl delete pvc presit-reports -n "${NS}" 2>&1 | head -3 || true
         echo "=== 重啟 Postgres ==="
         kubectl -n "${NS}" delete pod postgres-0 --ignore-not-found 2>&1 | head -3
@@ -97,6 +101,10 @@ spec:
       source: |
         echo "=== 套用 BDD Jobs ==="
         kubectl apply -f /workspace/manifests/pre-sit/30-bdd-jobs.yaml
+        echo "=== 套用 UI 截圖 ConfigMap + Report Server ==="
+        kubectl apply -f /workspace/manifests/pre-sit/40-ui-screenshot.yaml
+        echo "=== 啟動 Report Server（接掛新 PVC）==="
+        kubectl scale deployment report-server -n pre-sit --replicas=1 2>/dev/null || true
         echo "✅ BDD Jobs 已提交"
 
   # ── Step 4: Wait Phase 1-4 ───────────────────────────────────────────────────
@@ -126,7 +134,37 @@ spec:
           exit 1
         fi
 
-  # ── Step 5: Read Decision ────────────────────────────────────────────────────
+  # ── Step 5: UI Screenshot ────────────────────────────────────────────────────
+  - name: ui-screenshot
+    inputs:
+      artifacts:
+      - name: repo
+        path: /workspace
+        git:
+          repo: "{{workflow.parameters.git-repo}}"
+          revision: "{{workflow.parameters.git-revision}}"
+          depth: 1
+          insecureIgnoreHostKey: true
+    script:
+      image: bitnami/kubectl:latest
+      command: [bash]
+      source: |
+        echo "=== 刪除舊截圖 Job ==="
+        kubectl delete job presit-ui-screenshot -n pre-sit --ignore-not-found >/dev/null
+        echo "=== 啟動 Playwright 截圖 Job ==="
+        kubectl apply -f /workspace/manifests/pre-sit/41-ui-screenshot-job.yaml
+        echo "  等待截圖完成（最多 120s）..."
+        if ! kubectl wait job presit-ui-screenshot -n pre-sit \
+            --for=condition=Complete --timeout=120s; then
+          echo "⚠️  截圖 Job 未在時限內完成，繼續 pipeline"
+          kubectl logs -n pre-sit job/presit-ui-screenshot 2>/dev/null | tail -5
+        else
+          kubectl logs -n pre-sit job/presit-ui-screenshot 2>/dev/null | grep -v "^$"
+          echo "✅ UI 截圖完成"
+          echo "   報告: http://presit-report.local:30080/ui-screenshots/index.html"
+        fi
+
+  # ── Step 6: Read Decision ────────────────────────────────────────────────────
   - name: read-decision
     outputs:
       parameters:

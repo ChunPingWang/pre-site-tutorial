@@ -55,13 +55,23 @@ echo "  ✅ WorkflowTemplate 套用完成"
 # ── Step 4: Ingress ───────────────────────────────────────────────────────────
 echo "[4/5] 套用 Ingress（argo.local）"
 
-# 等待 argo-server Deployment 存在後再套用 Ingress
-echo "  等待 argo-workflows-argo-workflows-server 就緒..."
-kubectl -n argo wait deployment argo-workflows-argo-workflows-server \
+echo "  等待 argo-workflows-server 就緒..."
+kubectl -n argo wait deployment argo-workflows-server \
   --for=condition=Available --timeout=120s 2>/dev/null || true
 
 kubectl apply -f "${MANIFESTS}/30-ingress.yaml"
 echo "  ✅ Ingress 套用完成"
+
+# ── Step 4.5: UI Screenshot 資源（ConfigMap + Report Server）────────────────
+echo "[4.5/5] 套用 UI 截圖 ConfigMap + Report Server（presit-report.local）"
+# pre-sit namespace 可能尚未存在（由 ArgoCD 管理），等待後再 apply
+if kubectl get namespace pre-sit &>/dev/null; then
+  kubectl apply -f "${ROOT}/manifests/pre-sit/40-ui-screenshot.yaml"
+  echo "  ✅ UI 截圖資源套用完成"
+else
+  echo "  ⚠️  pre-sit namespace 尚未就緒，跳過（ArgoCD sync 後可手動執行）:"
+  echo "       kubectl apply -f manifests/pre-sit/40-ui-screenshot.yaml"
+fi
 
 # ── Step 5: 移除 Jenkins（可選） ──────────────────────────────────────────────
 echo "[5/5] Jenkins 狀態（本步驟不自動刪除，請確認後手動執行）"
@@ -79,15 +89,24 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  ✅ Argo Workflows 安裝完成"
 echo ""
-echo "  UI:   http://argo.local:30080"
-echo "        （需先在 /etc/hosts 加入 127.0.0.1 argo.local）"
+echo "  Argo Workflows UI:  http://argo.local:30080"
+echo "  UI Screenshot 報告: http://presit-report.local:30080/ui-screenshots/index.html"
 echo ""
-echo "  列出 WorkflowTemplates:"
-echo "    kubectl -n argo get workflowtemplates"
+echo "  /etc/hosts（一次加入）:"
+echo "    sudo tee -a /etc/hosts <<<'127.0.0.1 argo.local presit-report.local'"
 echo ""
 echo "  手動觸發 Pipeline:"
-echo "    argo submit --from workflowtemplate/presit-pipeline -n argo --watch"
+echo "    kubectl create -f - <<'EOF'"
+echo "    apiVersion: argoproj.io/v1alpha1"
+echo "    kind: Workflow"
+echo "    metadata:"
+echo "      generateName: presit-pipeline-"
+echo "      namespace: argo"
+echo "    spec:"
+echo "      workflowTemplateRef:"
+echo "        name: presit-pipeline"
+echo "    EOF"
 echo ""
-echo "  追蹤 Workflow 執行:"
-echo "    argo watch -n argo @latest"
+echo "  追蹤執行:"
+echo "    kubectl -n argo get workflows -w"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
