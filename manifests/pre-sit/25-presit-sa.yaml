@@ -1,0 +1,29 @@
+---
+# BDD runner ServiceAccount + RBAC — 一次性 setup，Jenkins 無需重複 apply
+apiVersion: v1
+kind: ServiceAccount
+metadata: { name: presit-sa, namespace: pre-sit }
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: { name: presit-role, namespace: pre-sit }
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: { name: presit-rolebinding, namespace: pre-sit }
+subjects:
+- { kind: ServiceAccount, name: presit-sa, namespace: pre-sit }
+roleRef:
+  kind: Role
+  name: presit-role
+  apiGroup: rbac.authorization.k8s.io
