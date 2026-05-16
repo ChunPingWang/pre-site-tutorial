@@ -39,7 +39,7 @@ if [[ "${GITOPS}" == "true" ]]; then
   echo "移除 overlay 目錄: ${OVERLAY_DIR}"
   cd "${ROOT}"
   git rm -r "manifests/sit-users/${USERNAME}/"
-  git commit -m "feat(sit): remove per-user namespace for ${USERNAME}"
+  git commit -m "feat(sit): 移除 ${USERNAME} 的 SIT namespace"
   git push origin main
 
   echo ""

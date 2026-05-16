@@ -173,7 +173,7 @@ EOF
   echo "[3/3] commit + push → GitHub"
   cd "${ROOT}"
   git add "manifests/sit-users/${USERNAME}/"
-  git commit -m "feat(sit): add per-user namespace for ${USERNAME} (${IMAGE_TAG})"
+  git commit -m "feat(sit): 新增 ${USERNAME} 的獨立 SIT namespace（image: ${IMAGE_TAG}）"
   git push origin main
 
   echo ""
