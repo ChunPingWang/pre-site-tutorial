@@ -1,0 +1,29 @@
+---
+# Database connection 共用 ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: petclinic-db-config
+  namespace: pre-sit
+data:
+  POSTGRES_HOST: "postgres.pre-sit.svc"
+  POSTGRES_DB: "petclinic"
+  SPRING_PROFILES_ACTIVE: "presit"
+  # 服務間互打的 URI（api-gateway 用，預設值也是同 ns 的 service DNS，可不設）
+  CUSTOMERS_SERVICE_URI: "http://customers-service.pre-sit.svc:8081"
+  VETS_SERVICE_URI:      "http://vets-service.pre-sit.svc:8083"
+  VISITS_SERVICE_URI:    "http://visits-service.pre-sit.svc:8082"
+  # JVM tuning（v2.1 PoC 已驗證必要）
+  JAVA_TOOL_OPTIONS: "-Xmx256m -XX:MaxMetaspaceSize=160m -XX:ReservedCodeCacheSize=48m"
+---
+# Database credentials Secret
+# v2.2 §3 決策 #18: PoC 用明文 K8s Secret；生產應換 sealed-secrets
+apiVersion: v1
+kind: Secret
+metadata:
+  name: petclinic-db-credentials
+  namespace: pre-sit
+type: Opaque
+stringData:
+  POSTGRES_USER: "petclinic"
+  POSTGRES_PASSWORD: "petclinic"
