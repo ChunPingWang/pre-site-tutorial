@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="Cucumber" time="4.703" tests="23" skipped="0" failures="0" errors="0">
+<testcase classname="Pre-SIT 應用層驗證" name="微服務 Pod 成功啟動 - Example #1.1" time="0.96">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我查詢 Pod "customers-service" 的狀態............................................passed
+那麼Pod 狀態應為 "Running"........................................................passed
+並且重啟次數應為 0..................................................................passed
+並且所有容器應處於 "Ready" 狀態........................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="微服務 Pod 成功啟動 - Example #1.2" time="0.163">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我查詢 Pod "vets-service" 的狀態.................................................passed
+那麼Pod 狀態應為 "Running"........................................................passed
+並且重啟次數應為 0..................................................................passed
+並且所有容器應處於 "Ready" 狀態........................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="微服務 Pod 成功啟動 - Example #1.3" time="0.151">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我查詢 Pod "visits-service" 的狀態...............................................passed
+那麼Pod 狀態應為 "Running"........................................................passed
+並且重啟次數應為 0..................................................................passed
+並且所有容器應處於 "Ready" 狀態........................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="微服務 Pod 成功啟動 - Example #1.4" time="0.259">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我查詢 Pod "api-gateway" 的狀態..................................................passed
+那麼Pod 狀態應為 "Running"........................................................passed
+並且重啟次數應為 0..................................................................passed
+並且所有容器應處於 "Ready" 狀態........................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="微服務資源使用量在合理範圍 - Example #1.1" time="0.123">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我查詢 Pod "customers-service" 的資源使用情況........................................passed
+那麼CPU 使用率應低於 80%............................................................passed
+並且記憶體使用量應低於 768 MB..........................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="微服務資源使用量在合理範圍 - Example #1.2" time="0.268">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我查詢 Pod "vets-service" 的資源使用情況.............................................passed
+那麼CPU 使用率應低於 80%............................................................passed
+並且記憶體使用量應低於 768 MB..........................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="微服務資源使用量在合理範圍 - Example #1.3" time="0.142">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我查詢 Pod "visits-service" 的資源使用情況...........................................passed
+那麼CPU 使用率應低於 80%............................................................passed
+並且記憶體使用量應低於 768 MB..........................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="微服務資源使用量在合理範圍 - Example #1.4" time="0.146">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我查詢 Pod "api-gateway" 的資源使用情況..............................................passed
+那麼CPU 使用率應低於 80%............................................................passed
+並且記憶體使用量應低於 768 MB..........................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="微服務健康檢查端點回應正常 - Example #1.1" time="0.191">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我對 "http://customers-service.pre-sit.svc:8081/actuator/health" 發送 GET 請求...passed
+那麼HTTP 狀態碼應為 200............................................................passed
+並且回應 JSON 的 "status" 欄位應為 "UP"..............................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="微服務健康檢查端點回應正常 - Example #1.2" time="0.123">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我對 "http://vets-service.pre-sit.svc:8083/actuator/health" 發送 GET 請求........passed
+那麼HTTP 狀態碼應為 200............................................................passed
+並且回應 JSON 的 "status" 欄位應為 "UP"..............................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="微服務健康檢查端點回應正常 - Example #1.3" time="0.102">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我對 "http://visits-service.pre-sit.svc:8082/actuator/health" 發送 GET 請求......passed
+那麼HTTP 狀態碼應為 200............................................................passed
+並且回應 JSON 的 "status" 欄位應為 "UP"..............................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="微服務健康檢查端點回應正常 - Example #1.4" time="0.105">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我對 "http://api-gateway.pre-sit.svc:8080/actuator/health" 發送 GET 請求.........passed
+那麼HTTP 狀態碼應為 200............................................................passed
+並且回應 JSON 的 "status" 欄位應為 "UP"..............................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="微服務數據庫健康指標正常 (v2.2: 真連 Postgres) - Example #1.1" time="0.084">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我對 "http://customers-service.pre-sit.svc:8081/actuator/health" 發送 GET 請求...passed
+那麼回應 JSON 中 "components.db.status" 應為 "UP"..................................passed
+並且回應 JSON 中 "components.db.details.database" 應為 "PostgreSQL"................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="微服務數據庫健康指標正常 (v2.2: 真連 Postgres) - Example #1.2" time="0.091">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我對 "http://vets-service.pre-sit.svc:8083/actuator/health" 發送 GET 請求........passed
+那麼回應 JSON 中 "components.db.status" 應為 "UP"..................................passed
+並且回應 JSON 中 "components.db.details.database" 應為 "PostgreSQL"................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="微服務數據庫健康指標正常 (v2.2: 真連 Postgres) - Example #1.3" time="0.099">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我對 "http://visits-service.pre-sit.svc:8082/actuator/health" 發送 GET 請求......passed
+那麼回應 JSON 中 "components.db.status" 應為 "UP"..................................passed
+並且回應 JSON 中 "components.db.details.database" 應為 "PostgreSQL"................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="連線池初始化成功且參數正確 - Example #1.1" time="0.094">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我對 "http://customers-service.pre-sit.svc:8081/actuator/metrics/hikaricp.connections" 發送 GET 請求.passed
+那麼HTTP 狀態碼應為 200............................................................passed
+並且活躍連線數應大於 0................................................................passed
+並且空閒連線數應大於 0................................................................passed
+並且等待連線數應為 0.................................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="連線池初始化成功且參數正確 - Example #1.2" time="0.194">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我對 "http://vets-service.pre-sit.svc:8083/actuator/metrics/hikaricp.connections" 發送 GET 請求.passed
+那麼HTTP 狀態碼應為 200............................................................passed
+並且活躍連線數應大於 0................................................................passed
+並且空閒連線數應大於 0................................................................passed
+並且等待連線數應為 0.................................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="連線池初始化成功且參數正確 - Example #1.3" time="0.106">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我對 "http://visits-service.pre-sit.svc:8082/actuator/metrics/hikaricp.connections" 發送 GET 請求.passed
+那麼HTTP 狀態碼應為 200............................................................passed
+並且活躍連線數應大於 0................................................................passed
+並且空閒連線數應大於 0................................................................passed
+並且等待連線數應為 0.................................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="啟動日誌中不包含錯誤 - Example #1.1" time="0.106">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我讀取 Pod "customers-service" 的啟動日誌..........................................passed
+那麼日誌中不應包含 "ERROR" 級別訊息......................................................passed
+並且日誌中不應包含 "Connection refused"..............................................passed
+並且日誌中應包含 "Started" 訊息.......................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="啟動日誌中不包含錯誤 - Example #1.2" time="0.1">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我讀取 Pod "vets-service" 的啟動日誌...............................................passed
+那麼日誌中不應包含 "ERROR" 級別訊息......................................................passed
+並且日誌中不應包含 "Connection refused"..............................................passed
+並且日誌中應包含 "Started" 訊息.......................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="啟動日誌中不包含錯誤 - Example #1.3" time="0.151">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我讀取 Pod "visits-service" 的啟動日誌.............................................passed
+那麼日誌中不應包含 "ERROR" 級別訊息......................................................passed
+並且日誌中不應包含 "Connection refused"..............................................passed
+並且日誌中應包含 "Started" 訊息.......................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="啟動日誌中不包含錯誤 - Example #1.4" time="0.096">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我讀取 Pod "api-gateway" 的啟動日誌................................................passed
+那麼日誌中不應包含 "ERROR" 級別訊息......................................................passed
+並且日誌中不應包含 "Connection refused"..............................................passed
+並且日誌中應包含 "Started" 訊息.......................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Pre-SIT 應用層驗證" name="K8s Service 端點解析正常" time="0.135">
+<system-out><![CDATA[
+假設Kind 集群 "pre-sit" 命名空間中所有 Pod 狀態為 Running.................................passed
+並且Phase 1 數據庫層驗證已通過.........................................................passed
+當我查詢 "pre-sit" 命名空間中的 Endpoints 資源..........................................passed
+那麼以下 Service 應擁有至少 1 個就緒端點:.................................................passed
+]]></system-out>
+</testcase>
+</testsuite>

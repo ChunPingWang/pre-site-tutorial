@@ -1,0 +1,228 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: { name: presit-sa, namespace: pre-sit }
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: { name: presit-role, namespace: pre-sit }
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: { name: presit-rolebinding, namespace: pre-sit }
+subjects:
+- { kind: ServiceAccount, name: presit-sa, namespace: pre-sit }
+roleRef:
+  kind: Role
+  name: presit-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: { name: presit-reports, namespace: pre-sit }
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 256Mi } }
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: presit-phase1-database
+  namespace: pre-sit
+  labels: { app: presit-validation, phase: "1" }
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 300
+  template:
+    metadata: { labels: { app: presit-validation, phase: "1" } }
+    spec:
+      restartPolicy: Never
+      serviceAccountName: presit-sa
+      initContainers:
+      - name: wait-for-db
+        image: busybox:1.36
+        command: ['sh','-c','until nc -z postgres 5432; do sleep 2; done']
+      containers:
+      - name: bdd-runner
+        image: localhost:5000/presit-bdd-runner:v2.2
+        imagePullPolicy: Always
+        command:
+        - sh
+        - -c
+        - |
+          mvn test -P phase-1 -q ; RC=$?
+          mkdir -p /reports/phase-1 && cp -r reports/. /reports/phase-1/ 2>/dev/null || true
+          exit $RC
+        env:
+        - { name: DB_HOST, value: "postgres" }
+        - { name: DB_PORT, value: "5432" }
+        - { name: DB_NAME, value: "petclinic" }
+        - { name: DB_USER, valueFrom: { secretKeyRef: { name: petclinic-db-credentials, key: POSTGRES_USER } } }
+        - { name: DB_PASSWORD, valueFrom: { secretKeyRef: { name: petclinic-db-credentials, key: POSTGRES_PASSWORD } } }
+        - { name: GATEWAY_URL, value: "http://api-gateway:8080" }
+        - { name: REPORT_DIR, value: "/reports" }
+        volumeMounts: [{ name: reports, mountPath: /reports }]
+        resources:
+          requests: { cpu: 200m, memory: 384Mi }
+          limits:   { cpu: 1,    memory: 768Mi }
+      volumes:
+      - name: reports
+        persistentVolumeClaim: { claimName: presit-reports }
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: presit-phase2-application
+  namespace: pre-sit
+  labels: { app: presit-validation, phase: "2" }
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 600
+  template:
+    metadata: { labels: { app: presit-validation, phase: "2" } }
+    spec:
+      restartPolicy: Never
+      serviceAccountName: presit-sa
+      initContainers:
+      - name: wait-for-phase1
+        image: bitnami/kubectl:latest
+        command: ['sh','-c','kubectl wait --for=condition=complete job/presit-phase1-database -n pre-sit --timeout=300s || true']
+      - name: wait-for-apps
+        image: bitnami/kubectl:latest
+        command:
+        - sh
+        - -c
+        - |
+          for svc in customers-service vets-service visits-service api-gateway; do
+            kubectl wait --for=condition=Ready pod -l app=$svc -n pre-sit --timeout=300s
+          done
+      containers:
+      - name: bdd-runner
+        image: localhost:5000/presit-bdd-runner:v2.2
+        imagePullPolicy: Always
+        command:
+        - sh
+        - -c
+        - |
+          mvn test -P phase-2 -q ; RC=$?
+          mkdir -p /reports/phase-2 && cp -r reports/. /reports/phase-2/ 2>/dev/null || true
+          exit $RC
+        env:
+        - { name: DB_HOST, value: "postgres" }
+        - { name: DB_PORT, value: "5432" }
+        - { name: DB_NAME, value: "petclinic" }
+        - { name: DB_USER, valueFrom: { secretKeyRef: { name: petclinic-db-credentials, key: POSTGRES_USER } } }
+        - { name: DB_PASSWORD, valueFrom: { secretKeyRef: { name: petclinic-db-credentials, key: POSTGRES_PASSWORD } } }
+        - { name: GATEWAY_URL, value: "http://api-gateway:8080" }
+        - { name: REPORT_DIR, value: "/reports" }
+        volumeMounts: [{ name: reports, mountPath: /reports }]
+        resources:
+          requests: { cpu: 200m, memory: 384Mi }
+          limits:   { cpu: 1,    memory: 768Mi }
+      volumes:
+      - name: reports
+        persistentVolumeClaim: { claimName: presit-reports }
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: presit-phase3-integration
+  namespace: pre-sit
+  labels: { app: presit-validation, phase: "3" }
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 900
+  template:
+    metadata: { labels: { app: presit-validation, phase: "3" } }
+    spec:
+      restartPolicy: Never
+      serviceAccountName: presit-sa
+      initContainers:
+      - name: wait-for-phase2
+        image: bitnami/kubectl:latest
+        command: ['sh','-c','kubectl wait --for=condition=complete job/presit-phase2-application -n pre-sit --timeout=600s || true']
+      containers:
+      - name: bdd-runner
+        image: localhost:5000/presit-bdd-runner:v2.2
+        imagePullPolicy: Always
+        command:
+        - sh
+        - -c
+        - |
+          mvn test -P phase-3 -q ; RC=$?
+          mkdir -p /reports/phase-3 && cp -r reports/. /reports/phase-3/ 2>/dev/null || true
+          exit $RC
+        env:
+        - { name: DB_HOST, value: "postgres" }
+        - { name: DB_PORT, value: "5432" }
+        - { name: DB_NAME, value: "petclinic" }
+        - { name: DB_USER, valueFrom: { secretKeyRef: { name: petclinic-db-credentials, key: POSTGRES_USER } } }
+        - { name: DB_PASSWORD, valueFrom: { secretKeyRef: { name: petclinic-db-credentials, key: POSTGRES_PASSWORD } } }
+        - { name: GATEWAY_URL, value: "http://api-gateway:8080" }
+        - { name: REPORT_DIR, value: "/reports" }
+        volumeMounts: [{ name: reports, mountPath: /reports }]
+        resources:
+          requests: { cpu: 200m, memory: 384Mi }
+          limits:   { cpu: 1,    memory: 768Mi }
+      volumes:
+      - name: reports
+        persistentVolumeClaim: { claimName: presit-reports }
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: presit-phase4-e2e-decision
+  namespace: pre-sit
+  labels: { app: presit-validation, phase: "4" }
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 900
+  template:
+    metadata: { labels: { app: presit-validation, phase: "4" } }
+    spec:
+      restartPolicy: Never
+      serviceAccountName: presit-sa
+      initContainers:
+      - name: wait-for-phase3
+        image: bitnami/kubectl:latest
+        command: ['sh','-c','kubectl wait --for=condition=complete job/presit-phase3-integration -n pre-sit --timeout=900s || true']
+      containers:
+      - name: bdd-runner
+        image: localhost:5000/presit-bdd-runner:v2.2
+        imagePullPolicy: Always
+        command:
+        - sh
+        - -c
+        - |
+          mvn test -P phase-4 -q ; RC=$?
+          mkdir -p /reports/phase-4 && cp -r reports/. /reports/phase-4/ 2>/dev/null || true
+          if [ -f /reports/presit-decision.json ]; then
+            echo '==== Pre-SIT Decision ===='
+            cat /reports/presit-decision.json
+          fi
+          exit $RC
+        env:
+        - { name: DB_HOST, value: "postgres" }
+        - { name: DB_PORT, value: "5432" }
+        - { name: DB_NAME, value: "petclinic" }
+        - { name: DB_USER, valueFrom: { secretKeyRef: { name: petclinic-db-credentials, key: POSTGRES_USER } } }
+        - { name: DB_PASSWORD, valueFrom: { secretKeyRef: { name: petclinic-db-credentials, key: POSTGRES_PASSWORD } } }
+        - { name: GATEWAY_URL, value: "http://api-gateway:8080" }
+        - { name: REPORT_DIR, value: "/reports" }
+        volumeMounts: [{ name: reports, mountPath: /reports }]
+        resources:
+          requests: { cpu: 200m, memory: 512Mi }
+          limits:   { cpu: 2,    memory: 1Gi }
+      volumes:
+      - name: reports
+        persistentVolumeClaim: { claimName: presit-reports }
