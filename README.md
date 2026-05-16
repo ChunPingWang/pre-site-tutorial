@@ -984,52 +984,77 @@ kubectl get secret petclinic-db-credentials -n pre-sit \
 | namespace = `sit-<username>` | K8s namespace 是最便宜的隔離邊界 |
 | 每個 namespace 獨立封存 SealedSecret | Bitnami Sealed Secrets 是 namespace-scoped，同一明文在不同 namespace 有不同密文 |
 | Ingress host = `<username>-sit.local` | nginx-ingress 依 Host header 路由，不需額外 port |
-| `envsubst` 模板 | 無 Helm 依賴；`manifests/sit-user-template/` 只是帶 `${VAR}` 的純 YAML |
-| 刪除即清理 | `kubectl delete namespace sit-<username>` 級聯刪除所有資源含 PVC |
+| Kustomize overlay per user | 共用 base + overlay patches，GitOps-native，無 Helm 依賴 |
+| ArgoCD ApplicationSet + git directory generator | 掃描 `manifests/sit-users/*/`，每個子目錄自動建立 Application |
+| 刪除即清理 | 從 git 移除目錄 → ArgoCD 刪除 Application（finalizer 確保 K8s 資源含 PVC 也被清理） |
 
-#### 快速建立
+#### 兩種模式
 
+**直接模式**（快速，不需 git push）
 ```bash
 # 建立 sit-alice
 scripts/create-sit-user.sh alice
 
 # 指定 image tag（預設 v2.2）
-scripts/create-sit-user.sh bob v2.3
+scripts/create-sit-user.sh alice v2.3
 
 # 刪除
 scripts/delete-sit-user.sh alice
 ```
 
-腳本執行流程：
-1. 建立 `sit-<username>` namespace
-2. 從 `sit` namespace 讀取現有已解封 credentials → `kubeseal` 重新封存為新 namespace
-3. `envsubst` 展開 `manifests/sit-user-template/` 所有 YAML → `kubectl apply`
-4. 等待 Postgres rollout → 等待所有 PetClinic pods Ready
-5. 印出 hosts 設定與 curl 驗收指令
+**GitOps 模式**（生成 overlay → push → ArgoCD 自動 sync）
+```bash
+# 建立 sit-bob：生成 manifests/sit-users/bob/，commit + push，ArgoCD 接管
+scripts/create-sit-user.sh --gitops bob
+
+# 刪除：從 git 移除 bob/ 目錄，ArgoCD 自動刪除 Application + namespace
+scripts/delete-sit-user.sh --gitops bob
+```
+
+#### GitOps 流程
+
+```
+create-sit-user.sh --gitops bob
+  ↓
+manifests/sit-users/bob/
+  ├── 00-namespace.yaml               (sit-bob namespace + labels)
+  ├── 06-sealed-db-credentials.yaml   (kubeseal 封存，namespace-scoped)
+  └── kustomization.yaml              (namespace: sit-bob, patches, images)
+  ↓ git push
+ArgoCD ApplicationSet (git directory generator)
+  ↓ 掃描到 manifests/sit-users/bob/
+建立 Application petclinic-sit-bob
+  ↓ automated sync
+Kustomize build (overlay → base)
+  ↓
+K8s 資源建立在 sit-bob namespace
+```
 
 #### 存取方式
 
 ```bash
-# 1. 加入 /etc/hosts
-echo '127.0.0.1 alice-sit.local' | sudo tee -a /etc/hosts
-
-# 2. 瀏覽器
-open http://alice-sit.local:30080/
-
-# 3. curl 驗收
-curl -s -H 'Host: alice-sit.local' http://localhost:30080/api/customer/owners | jq length
+echo '127.0.0.1 bob-sit.local' | sudo tee -a /etc/hosts
+curl -s -H 'Host: bob-sit.local' http://localhost:30080/api/customer/owners | jq length
 # 預期: 10
 ```
 
-#### 模板檔案位置
+#### 檔案結構
 
 ```
-manifests/sit-user-template/
-├── 00-namespace.yaml        namespace (${NS}, sit-user label)
-├── 05-config.yaml           ConfigMap (POSTGRES_HOST / URIs 全指向 ${NS})
-├── 10-postgres.yaml         StatefulSet + Service (1Gi PVC)
-├── 20-petclinic-services.yaml  4 Services + 4 Deployments (image tag = ${IMAGE_TAG})
-└── 30-ingress.yaml          Ingress host = ${USERNAME}-sit.local
+manifests/
+├── sit-user-base/               Kustomize base（無 namespace，被 overlay 繼承）
+│   ├── kustomization.yaml
+│   ├── 05-config.yaml
+│   ├── 10-postgres.yaml
+│   ├── 20-petclinic-services.yaml
+│   └── 30-ingress.yaml
+├── sit-users/                   每位使用者的 Kustomize overlay（git-tracked）
+│   └── bob/
+│       ├── 00-namespace.yaml
+│       ├── 06-sealed-db-credentials.yaml
+│       └── kustomization.yaml
+└── argocd/
+    └── appset-sit-users.yaml    ApplicationSet (git directory generator)
 ```
 
 ---
@@ -1046,6 +1071,10 @@ pre-site-tutorial/
 ├── presit-bdd-demo.tar.gz                 v2.0 原始 demo tar 包
 │
 ├── manifests/
+│   ├── argocd/
+│   │   ├── app-pre-sit.yaml               ArgoCD Application（pre-sit，手動 sync）
+│   │   ├── app-sit.yaml                   ArgoCD Application（sit，automated sync + Image Updater）
+│   │   └── appset-sit-users.yaml          ⭐ ApplicationSet（git directory generator，per-user）
 │   ├── jenkins/
 │   │   ├── 00-namespace.yaml              Jenkins namespace
 │   │   ├── 05-rbac.yaml                   SA + Role（pre-sit）+ ClusterRole（cross-ns）
@@ -1063,12 +1092,23 @@ pre-site-tutorial/
 │   │   └── values.yaml                    Sealed Secrets controller Helm values
 │   ├── sit/                               SIT namespace manifests（ArgoCD 管理）
 │   │   └── 06-sealed-db-credentials.yaml  ⭐ SIT DB 密碼 SealedSecret（已加入 kustomization）
-│   └── sit-user-template/                 ⭐ Per-user SIT namespace 模板（envsubst）
-│       ├── 00-namespace.yaml
-│       ├── 05-config.yaml
-│       ├── 10-postgres.yaml
-│       ├── 20-petclinic-services.yaml
-│       └── 30-ingress.yaml
+│   ├── sit-user-base/                     ⭐ Per-user Kustomize base（無 namespace）
+│   │   ├── kustomization.yaml
+│   │   ├── 05-config.yaml
+│   │   ├── 10-postgres.yaml
+│   │   ├── 20-petclinic-services.yaml
+│   │   └── 30-ingress.yaml
+│   ├── sit-user-template/                 Per-user envsubst 模板（直接模式用）
+│   │   ├── 00-namespace.yaml
+│   │   ├── 05-config.yaml
+│   │   ├── 10-postgres.yaml
+│   │   ├── 20-petclinic-services.yaml
+│   │   └── 30-ingress.yaml
+│   └── sit-users/                         ⭐ Per-user Kustomize overlay（ArgoCD 管理）
+│       └── bob/                           create-sit-user.sh --gitops bob 生成
+│           ├── 00-namespace.yaml
+│           ├── 06-sealed-db-credentials.yaml
+│           └── kustomization.yaml
 │
 ├── scripts/
 │   ├── setup-monitoring.sh                ⭐ 一鍵安裝 Prometheus + Grafana + Loki
