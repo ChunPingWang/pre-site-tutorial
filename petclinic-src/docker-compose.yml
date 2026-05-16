@@ -1,0 +1,82 @@
+# 本機驗證用 docker-compose（Stage A.5）
+# 目的：在沒有 K8s 的環境下確認 4 services + Postgres + Flyway 可以一起跑起來
+#
+# 使用方式：
+#   cd petclinic-src
+#   ./mvnw -B package -DskipTests
+#   docker compose up -d --build
+#
+# 驗證點：
+#   curl http://localhost:8081/actuator/health     # customers-service
+#   curl http://localhost:8082/actuator/health     # visits-service
+#   curl http://localhost:8083/actuator/health     # vets-service
+#   curl http://localhost:8080/actuator/health     # api-gateway
+#   curl http://localhost:8080/api/customer/owners # 經 gateway → customers
+#   docker exec -it petclinic-postgres psql -U petclinic -d petclinic -c '\dn'
+#
+# 驗證完關閉：
+#   docker compose down -v
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: petclinic-postgres
+    environment:
+      POSTGRES_DB: petclinic
+      POSTGRES_USER: petclinic
+      POSTGRES_PASSWORD: petclinic
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U petclinic -d petclinic"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  customers-service:
+    build: ./spring-petclinic-customers-service
+    environment:
+      SPRING_PROFILES_ACTIVE: presit
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: petclinic
+      POSTGRES_USER: petclinic
+      POSTGRES_PASSWORD: petclinic
+    depends_on:
+      postgres: { condition: service_healthy }
+    ports: ["8081:8081"]
+
+  vets-service:
+    build: ./spring-petclinic-vets-service
+    environment:
+      SPRING_PROFILES_ACTIVE: presit
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: petclinic
+      POSTGRES_USER: petclinic
+      POSTGRES_PASSWORD: petclinic
+    depends_on:
+      postgres: { condition: service_healthy }
+    ports: ["8083:8083"]
+
+  visits-service:
+    build: ./spring-petclinic-visits-service
+    environment:
+      SPRING_PROFILES_ACTIVE: presit
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: petclinic
+      POSTGRES_USER: petclinic
+      POSTGRES_PASSWORD: petclinic
+    depends_on:
+      postgres: { condition: service_healthy }
+    ports: ["8082:8082"]
+
+  api-gateway:
+    build: ./spring-petclinic-api-gateway
+    environment:
+      SPRING_PROFILES_ACTIVE: presit
+      CUSTOMERS_SERVICE_URI: http://customers-service:8081
+      VETS_SERVICE_URI:      http://vets-service:8083
+      VISITS_SERVICE_URI:    http://visits-service:8082
+    depends_on:
+      customers-service: { condition: service_started }
+      vets-service:      { condition: service_started }
+      visits-service:    { condition: service_started }
+    ports: ["8080:8080"]

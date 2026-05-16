@@ -60,10 +60,6 @@
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-database-postgresql</artifactId>
-        </dependency>
 
         <!-- Third parties-->
         <!-- v2.2: 移除 mysql-connector-j / hsqldb -->
