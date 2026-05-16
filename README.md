@@ -58,8 +58,8 @@ flowchart LR
     E --> F[Phase 2: App 健康驗證]
     F --> G[Phase 3: API 功能驗證]
     G --> H[Phase 4: E2E + 性能 + 決策]
-    H -->|通過率 ≥95%| I[✅ GO → SIT]
-    H -->|通過率 <95%| J[❌ NO-GO → 修復]
+    H -->|通過率 達 95%| I[✅ GO → SIT]
+    H -->|通過率 未達 95%| J[❌ NO-GO → 修復]
 
     style E fill:#cfc
     style F fill:#cfc
@@ -99,12 +99,12 @@ flowchart LR
 
 ```mermaid
 graph LR
-    DB[PostgreSQL Ready<br/>nc -z :5432] --> P1[Phase 1<br/>DB Schema 驗證]
-    APP[All Pods Ready<br/>kubectl wait] --> P2
-    P1 -->|kubectl wait<br/>complete| P2[Phase 2<br/>App 層驗證]
-    P2 -->|kubectl wait<br/>complete \|\| true| P3[Phase 3<br/>功能集成]
-    P3 -->|kubectl wait<br/>complete \|\| true| P4[Phase 4<br/>E2E + 決策]
-    P4 --> R[(presit-decision.json<br/>GO / NO-GO)]
+    DB["PostgreSQL Ready<br/>nc -z :5432"] --> P1["Phase 1<br/>DB Schema 驗證"]
+    P1 -->|hard wait| P2["Phase 2<br/>App 層驗證"]
+    APP["All Pods Ready<br/>kubectl wait"] --> P2
+    P2 -->|soft wait| P3["Phase 3<br/>功能集成"]
+    P3 -->|soft wait| P4["Phase 4<br/>E2E + 決策"]
+    P4 --> R[("presit-decision.json<br/>GO / NO-GO")]
 
     style P1 fill:#ddf
     style P2 fill:#ddf
@@ -113,7 +113,12 @@ graph LR
     style R fill:#fd9
 ```
 
-> 關鍵設計：Phase 2/3/4 的 initContainer 在 `kubectl wait` 後接 `|| true`，使前序失敗時後序仍可執行，便於**一次 rerun 收集完整失敗證據**，避免反覆人工觸發。
+| 等待類型 | 寫法 | 行為 |
+|---------|------|------|
+| **hard wait** | `kubectl wait --for=condition=complete job/...` | 前序失敗則自身放棄 |
+| **soft wait** | `kubectl wait --for=condition=complete job/... \|\| true` | 前序失敗仍繼續，便於一次 rerun 收齊證據 |
+
+> 關鍵設計：Phase 3/4 的 initContainer 用 **soft wait**，使前序失敗時後序仍可執行，便於**一次 rerun 收集完整失敗證據**，避免反覆人工觸發。
 
 ### 2.3 兩種 DB 的策略性切割
 
