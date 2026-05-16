@@ -24,6 +24,7 @@
    - [7.7 v2.3 Sealed Secrets](#77-v23-sealed-secrets消除-git-明文密碼)
    - [7.8 v2.3 Per-user SIT Namespace](#78-v23-per-user-sit-namespace每位測試人員獨立沙盒)
    - [7.9 v2.3 完整環境 Quick Start ⭐](#79-v23-完整環境-quick-start)
+   - [7.10 v2.3 Postgres PVC Snapshot / Restore](#710-v23-postgres-pvc-snapshot--restore)
 8. [目錄結構說明](#8-目錄結構說明)
 9. [常見問題（FAQ）](#9-常見問題faq)
 10. [延伸學習路徑](#10-延伸學習路徑)
@@ -1195,6 +1196,68 @@ scripts/create-sit-user.sh alice
 
 ---
 
+### 7.10 v2.3 Postgres PVC Snapshot / Restore
+
+SIT 資料會隨測試累積。快照功能讓測試人員在「已知良好狀態」做完快照，測試後隨時還原，不需重建整個 namespace。
+
+#### 設計
+
+| 決策 | 理由 |
+|------|------|
+| pg_dump / pg_restore（非 VolumeSnapshot） | Kind 的 `local-path` provisioner 不支援 CSI VolumeSnapshot；pg_dump 在任何 K8s 環境都能用 |
+| Custom format（`-Fc`） | 支援壓縮，可 parallel restore，比 SQL text dump 小 |
+| 快照存入獨立 PVC（`postgres-snapshots`, 5Gi） | 與資料 PVC 分離，namespace 刪除不會連帶清除快照（需手動刪 PVC） |
+| Restore 前先 scale down | 避免還原時 PetClinic 服務持有 DB 連線導致 `pg_restore` 失敗 |
+
+適用 namespace：`sit`、`sit-<username>`（不適用 `pre-sit`，pre-sit 每次都自動 reset）
+
+#### 使用方式
+
+```bash
+# 建立快照（自動以時間戳命名）
+scripts/snapshot-db.sh sit
+scripts/snapshot-db.sh sit-bob
+
+# 列出現有快照
+scripts/snapshot-db.sh sit --list
+
+# 還原（scale down → pg_restore → scale up）
+scripts/restore-db.sh sit 20260516-233303-sit
+scripts/restore-db.sh sit-bob 20260516-233303-sit-bob
+```
+
+#### 執行流程
+
+**快照（`snapshot-db.sh`）**：
+1. 確認 `postgres-snapshots` PVC 存在（不存在則建立 5Gi PVC）
+2. 建立 `pg-snapshot-<name>` Job，執行 `pg_dump -Fc`
+3. 等待 Job Complete，印出快照檔大小
+
+**還原（`restore-db.sh`）**：
+1. Scale down：customers / vets / visits / api-gateway → 0 replicas
+2. 建立 `pg-restore-<name>` Job，執行 `pg_restore --clean --if-exists`
+3. Scale up 4 個服務 → 等待 pods Ready
+
+#### 驗收範例
+
+```bash
+# 建立快照
+scripts/snapshot-db.sh sit
+# 輸出: ✅ 完成：20260516-233303-sit.dump（24.0K）
+
+# 模擬資料變動（手動在 UI 新增一隻 pet）
+
+# 還原至快照狀態
+scripts/restore-db.sh sit 20260516-233303-sit
+# 輸出: ✅ 還原完成
+
+# 確認資料還原
+curl -s -H 'Host: sit.local' http://localhost:30080/api/customer/owners | jq length
+# 預期: 10（還原前新增的 pet 已消失）
+```
+
+---
+
 ## 8. 目錄結構說明
 
 ```
@@ -1252,7 +1315,9 @@ pre-site-tutorial/
 │   ├── setup-monitoring.sh                一鍵安裝 Prometheus + Grafana + Loki
 │   ├── setup-sealed-secrets.sh            一鍵安裝 Sealed Secrets controller
 │   ├── create-sit-user.sh                 建立 per-user SIT namespace（直接 / GitOps）
-│   └── delete-sit-user.sh                 刪除 per-user SIT namespace（直接 / GitOps）
+│   ├── delete-sit-user.sh                 刪除 per-user SIT namespace（直接 / GitOps）
+│   ├── snapshot-db.sh                     ⭐ Postgres pg_dump 快照（sit / sit-<user>）
+│   └── restore-db.sh                      ⭐ Postgres pg_restore 還原
 │
 └── presit-bdd-demo/                       v2.0 原始 demo 與 v2.1 PoC
     ├── features/                          v2.0 demo: Gherkin

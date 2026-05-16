@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pg-restore-${SNAPSHOT_NAME}
+  namespace: ${NS}
+spec:
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: pg-restore
+        image: postgres:16-alpine
+        command:
+        - sh
+        - -c
+        - |
+          set -e
+          DUMP=/snapshots/${SNAPSHOT_NAME}.dump
+          if [ ! -f "${DUMP}" ]; then
+            echo "❌ 找不到快照檔: ${DUMP}"
+            echo "可用快照:"
+            ls /snapshots/ 2>/dev/null || echo "  （快照目錄為空）"
+            exit 1
+          fi
+          echo "[restore] 還原 ${SNAPSHOT_NAME}.dump → petclinic@postgres.${NS}.svc"
+          pg_restore \
+            --host=postgres.${NS}.svc \
+            --username=${POSTGRES_USER} \
+            --dbname=petclinic \
+            --clean \
+            --if-exists \
+            --no-owner \
+            --no-privileges \
+            "${DUMP}"
+          echo "[restore] ✅ 還原完成"
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef: { name: petclinic-db-credentials, key: POSTGRES_USER }
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef: { name: petclinic-db-credentials, key: POSTGRES_PASSWORD }
+        volumeMounts:
+        - { name: snapshots, mountPath: /snapshots }
+      volumes:
+      - name: snapshots
+        persistentVolumeClaim: { claimName: postgres-snapshots }

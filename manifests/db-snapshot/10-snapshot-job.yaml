@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pg-snapshot-${SNAPSHOT_NAME}
+  namespace: ${NS}
+spec:
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: pg-dump
+        image: postgres:16-alpine
+        command:
+        - sh
+        - -c
+        - |
+          set -e
+          echo "[snapshot] 連線至 postgres.${NS}.svc..."
+          pg_dump \
+            --host=postgres.${NS}.svc \
+            --username=${POSTGRES_USER} \
+            --dbname=petclinic \
+            --format=custom \
+            --file=/snapshots/${SNAPSHOT_NAME}.dump
+          SIZE=$(du -sh /snapshots/${SNAPSHOT_NAME}.dump | cut -f1)
+          echo "[snapshot] ✅ 完成：${SNAPSHOT_NAME}.dump（${SIZE}）"
+          ls -lh /snapshots/
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef: { name: petclinic-db-credentials, key: POSTGRES_USER }
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef: { name: petclinic-db-credentials, key: POSTGRES_PASSWORD }
+        volumeMounts:
+        - { name: snapshots, mountPath: /snapshots }
+      volumes:
+      - name: snapshots
+        persistentVolumeClaim: { claimName: postgres-snapshots }
