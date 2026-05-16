@@ -832,10 +832,12 @@ kubectl wait -n jenkins deployment/jenkins \
 
 #### 觸發 Pipeline
 
+> **帳密**：Jenkins 採用 `JENKINS_OPTS="--argumentsRealm.passwd.admin= --argumentsRealm.roles.admin=admin"` 設定，**無需帳號密碼**，直接開啟 UI 即可操作。CSRF 保護亦已停用，方便 curl / API 觸發。
+
 ```bash
-# 從 Kind 節點 IP 進入 Jenkins UI（無密碼）
+# 從 Kind 節點 IP 進入 Jenkins UI
 NODE_IP=$(kubectl get node presit-control-plane -o jsonpath='{.status.addresses[0].address}')
-echo "Jenkins UI: http://${NODE_IP}:30808"
+echo "Jenkins UI: http://${NODE_IP}:30808"   # 無密碼，直接登入
 
 # 或用 API 直接觸發（CSRF 已停用）
 kubectl exec -n jenkins deploy/jenkins -- \
