@@ -60,8 +60,16 @@ pipeline {
         stage('Wait Phase 1-4') {
             steps {
                 sh '''
-                  ${KUBECTL} wait --for=condition=complete --for=condition=failed \\
-                    job/presit-phase4-e2e-decision -n ${NS} --timeout=1800s
+                  # kubectl wait 不支援兩個 --for 條件的 OR 語意；用 polling 代替
+                  DEADLINE=$(($(date +%s) + 1800))
+                  until ${KUBECTL} get job presit-phase4-e2e-decision -n ${NS} \
+                      -o jsonpath='{.status.conditions[0].type}' 2>/dev/null \
+                      | grep -qE 'Complete|Failed'; do
+                    [ $(date +%s) -ge ${DEADLINE} ] && echo "TIMEOUT" && exit 1
+                    sleep 15
+                  done
+                  echo "Phase 4 done: $(${KUBECTL} get job presit-phase4-e2e-decision -n ${NS} \
+                      -o jsonpath='{.status.conditions[0].type}')"
                 '''
             }
         }
