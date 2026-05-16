@@ -1335,6 +1335,37 @@ curl -s -o /dev/null -w "%{http_code}" -H "Host: argo.local" http://localhost:30
 # 預期: 200
 ```
 
+#### 實跑結果（2026-05-17）
+
+Workflow `presit-pipeline-ls86m`，從 `workflowtemplate/presit-pipeline` 提交，全程約 3 分鐘：
+
+```
+Step               狀態       耗時    說明
+─────────────────────────────────────────────────────────────────
+preflight          Succeeded  < 1s    kubectl v1.36.1；pre-sit/sit ns 存在；ArgoCD apps 就緒
+reset-presit       Succeeded  ~8s     清除 4 舊 Jobs + presit-reports PVC；重啟 postgres-0；
+                                      rollout restart customers/vets/visits；所有 deployment Ready
+apply-bdd-jobs     Succeeded  ~1s     git clone main 分支；kubectl apply 4 Jobs + PVC
+wait-phase4        Succeeded  ~2m     polling 15s/次；偵測到 SuccessCriteriaMet + Complete
+read-decision      Succeeded  < 1s    決策 JSON：passed=55 failed=0 pass_rate=100 decision="GO ✅"
+check-sit-state    Succeeded  < 1s    petclinic-sit Synced/Healthy；4 個 image 均為 :sit-approved
+─────────────────────────────────────────────────────────────────
+Workflow           Succeeded
+```
+
+Phase 4 決策原文：
+```json
+{"timestamp":"2026-05-16T16:16:02Z","total":55,"passed":55,"failed":0,"pass_rate":100,"decision":"GO ✅"}
+```
+
+SIT 環境最終狀態：
+```
+customers-service:   localhost:5000/petclinic-customers-service:sit-approved
+vets-service:        localhost:5000/petclinic-vets-service:sit-approved
+visits-service:      localhost:5000/petclinic-visits-service:sit-approved
+api-gateway:         localhost:5000/petclinic-api-gateway:sit-approved
+```
+
 > **Argo Workflows 相關檔案**
 > - `manifests/argo-workflows/05-rbac.yaml` — ServiceAccount + Roles（等同 Jenkins SA 權限）
 > - `manifests/argo-workflows/10-install-values.yaml` — Helm values（server 模式、無 TLS）
