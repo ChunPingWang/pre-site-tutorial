@@ -1,0 +1,25 @@
+# v2.2 Stage F: Kustomize 包裝 — Argo Image Updater 需要 Helm 或 Kustomize source
+# 才能自動偵測 image tag 變化並 patch deployment。
+#
+# 預設 image tag = v2.2 (Stage E 手動部署的初始狀態)；
+# Argo Image Updater 偵測到 :sit-approved tag 出現後，透過 ArgoCD parameter override
+# 把 images 區段的 newTag 改成 sit-approved，觸發 sync。
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- 00-namespace.yaml
+- 05-config.yaml
+- 10-postgres.yaml
+- 20-petclinic-services.yaml
+- 30-ingress.yaml
+
+images:
+- name: localhost:5000/petclinic-customers-service
+  newTag: v2.2
+- name: localhost:5000/petclinic-vets-service
+  newTag: v2.2
+- name: localhost:5000/petclinic-visits-service
+  newTag: v2.2
+- name: localhost:5000/petclinic-api-gateway
+  newTag: v2.2
