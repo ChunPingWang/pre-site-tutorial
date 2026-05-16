@@ -785,6 +785,60 @@ REPORT_DIR=$(pwd)/reports \
 mvn test -P phase-1   # 或 phase-2 / phase-3 / phase-4
 ```
 
+### 7.5 v2.3 Stage C：Jenkins CI/CD 自動化 （在 Kind 內）
+
+Jenkins 作為 Pre-SIT 的 CI/CD orchestrator，部署在同一個 Kind 叢集，透過 kubectl（in-cluster）觸發 BDD 鏈並讀取決策。
+
+#### 前提：v2.2 雙環境已就緒
+
+```bash
+# 確認 ArgoCD 兩個 Application 存在
+kubectl -n argocd get application petclinic-pre-sit petclinic-sit
+# 確認 pre-sit namespace 有 BDD RBAC（一次性 setup）
+kubectl apply -f manifests/pre-sit/25-presit-sa.yaml
+```
+
+#### 啟動 Jenkins
+
+```bash
+# 部署 Jenkins（含 ServiceAccount + RBAC）
+kubectl apply -f manifests/jenkins/00-namespace.yaml
+kubectl apply -f manifests/jenkins/05-rbac.yaml
+kubectl apply -f manifests/jenkins/10-jenkins.yaml
+
+# 等待就緒（initContainer 安裝 kubectl + plugins 約需 2–3 分鐘）
+kubectl wait -n jenkins deployment/jenkins \
+  --for=condition=Available --timeout=300s
+```
+
+#### 觸發 Pipeline
+
+```bash
+# 從 Kind 節點 IP 進入 Jenkins UI（無密碼）
+NODE_IP=$(kubectl get node presit-control-plane -o jsonpath='{.status.addresses[0].address}')
+echo "Jenkins UI: http://${NODE_IP}:30808"
+
+# 或用 API 直接觸發（CSRF 已停用）
+kubectl exec -n jenkins deploy/jenkins -- \
+  curl -s -X POST http://localhost:8080/job/petclinic-presit/build
+```
+
+#### Pipeline 階段說明
+
+| 階段 | 動作 | 預期輸出 |
+|------|------|---------|
+| Preflight | 驗 kubectl 可用、namespace 存在、ArgoCD apps 存在 | `kubectl v1.36+` |
+| Reset Pre-SIT | 清舊 jobs/PVC、重啟 postgres + deployments | `pod/postgres-0 condition met` |
+| Apply BDD Jobs | `kubectl apply manifests/pre-sit/30-bdd-jobs.yaml` | 4 jobs created |
+| Wait Phase 1-4 | Polling 每 15 秒檢查 phase4 condition（支援 K8s 1.29+ `SuccessCriteriaMet`） | `Phase 4 done: SuccessCriteriaMet Complete` |
+| Read decision | 讀 phase4 logs，解析 JSON | `"decision":"GO ✅"` |
+| Check SIT state | 顯示 SIT 4 個 deployment 的現行 image | `:sit-approved` |
+
+#### 已知限制（v2.4 backlog）
+
+- Jenkins 無法收到 GitHub webhook（Kind 不對外）→ 手動觸發或 polling SCM
+- Image build（mvn package + docker build/push）留給 v2.4 用 kaniko 或 DinD sidecar
+
 ---
 
 ## 8. 目錄結構說明
@@ -792,10 +846,21 @@ mvn test -P phase-1   # 或 phase-2 / phase-3 / phase-4
 ```
 pre-site-tutorial/
 ├── README.md                              ⭐ 本檔（教學入口）
+├── Jenkinsfile                            ⭐ v2.3 CI/CD pipeline（5-stage orchestrator）
 ├── Pre-SIT_Work_Plan_v2.md                v2.0 原始工作計畫書
 ├── Pre-SIT_Work_Plan_v2.1.md              ⭐ v2.1 校準後工作計畫書
 ├── Pre-SIT_Gherkin_to_Script_Guide.md     Gherkin → Java 對應教學
 ├── presit-bdd-demo.tar.gz                 v2.0 原始 demo tar 包
+│
+├── manifests/
+│   ├── jenkins/
+│   │   ├── 00-namespace.yaml              Jenkins namespace
+│   │   ├── 05-rbac.yaml                   SA + Role（pre-sit）+ ClusterRole（cross-ns）
+│   │   └── 10-jenkins.yaml                Jenkins 2.492.3 Deployment + NodePort 30808
+│   ├── pre-sit/
+│   │   ├── 25-presit-sa.yaml              ⭐ BDD runner SA/Role/RoleBinding（一次性 setup）
+│   │   └── 30-bdd-jobs.yaml               4 Phase Jobs + PVC（Jenkins 每次 apply）
+│   └── sit/                               SIT namespace manifests（ArgoCD 管理）
 │
 └── presit-bdd-demo/                       v2.0 原始 demo 與 v2.1 PoC
     ├── features/                          v2.0 demo: Gherkin
@@ -874,7 +939,7 @@ mvn test -Dcucumber.filter.tags="@critical and not @known-issue"
 | 不要 Eureka，改用 K8s Service Discovery | 重 build api-gateway 改用 Spring Cloud Kubernetes |
 | 真正用 Postgres 而非 HSQLDB | 重 build PetClinic 服務、加入 postgres profile |
 | ArgoCD 接真正的 Git | `argocd/petclinic-pre-sit.yaml` 改 `repoURL` |
-| CI/CD 整合 | 把 `run-presit.sh` 包進 Jenkins/GitLab pipeline |
+| CI/CD 整合（已實作 v2.3） | Jenkins 部署在 Kind 內；`manifests/jenkins/` + `Jenkinsfile` 已就緒，見 [§7.5](#75-v23-stage-cjenkins-cicd-自動化-在-kind-內) |
 
 ---
 
