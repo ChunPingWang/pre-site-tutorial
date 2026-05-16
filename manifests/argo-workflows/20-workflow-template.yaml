@@ -1,0 +1,181 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: presit-pipeline
+  namespace: argo
+  labels:
+    app: presit-pipeline
+spec:
+  serviceAccountName: argo-presit-runner
+  entrypoint: pipeline
+  # 預設 30 分鐘 timeout（同 Jenkinsfile）
+  activeDeadlineSeconds: 1800
+
+  arguments:
+    parameters:
+    - name: ns
+      value: pre-sit
+    - name: sit-ns
+      value: sit
+    - name: git-repo
+      value: https://github.com/ChunPingWang/pre-site-tutorial.git
+    - name: git-revision
+      value: main
+
+  templates:
+
+  # ── 主流程：6 個依序執行的 step ────────────────────────────────────────────────
+  - name: pipeline
+    steps:
+    - - name: preflight
+        template: preflight
+    - - name: reset-presit
+        template: reset-presit
+    - - name: apply-bdd-jobs
+        template: apply-bdd-jobs
+    - - name: wait-phase4
+        template: wait-phase4
+    - - name: read-decision
+        template: read-decision
+    - - name: check-sit-state
+        template: check-sit-state
+        arguments:
+          parameters:
+          - name: decision
+            value: "{{steps.read-decision.outputs.parameters.decision}}"
+
+  # ── Step 1: Preflight ─────────────────────────────────────────────────────────
+  - name: preflight
+    script:
+      image: bitnami/kubectl:1.31
+      command: [bash]
+      source: |
+        set -e
+        NS="{{workflow.parameters.ns}}"
+        echo "=== kubectl 版本 ==="
+        kubectl version --client=true 2>&1 | head -3
+        echo "=== 確認 namespace ==="
+        kubectl get ns "${NS}" >/dev/null || { echo "❌ Namespace ${NS} not found"; exit 1; }
+        kubectl get ns sit >/dev/null || { echo "❌ Namespace sit not found"; exit 1; }
+        echo "=== 確認 ArgoCD Applications ==="
+        kubectl -n argocd get application petclinic-pre-sit petclinic-sit
+        echo "✅ Preflight 通過"
+
+  # ── Step 2: Reset Pre-SIT ────────────────────────────────────────────────────
+  - name: reset-presit
+    script:
+      image: bitnami/kubectl:1.31
+      command: [bash]
+      source: |
+        NS="{{workflow.parameters.ns}}"
+        echo "=== 清除舊 BDD Jobs ==="
+        kubectl delete jobs -n "${NS}" -l app=presit-validation 2>&1 | head -10 || true
+        echo "=== 清除舊 Reports PVC ==="
+        kubectl delete pvc presit-reports -n "${NS}" 2>&1 | head -3 || true
+        echo "=== 重啟 Postgres ==="
+        kubectl -n "${NS}" delete pod postgres-0 --ignore-not-found 2>&1 | head -3
+        kubectl -n "${NS}" wait --for=condition=Ready pod/postgres-0 --timeout=120s
+        echo "=== 重啟 PetClinic 服務 ==="
+        kubectl -n "${NS}" rollout restart deployment customers-service vets-service visits-service
+        kubectl -n "${NS}" wait --for=condition=Available deployment --all --timeout=300s
+        echo "✅ Pre-SIT 環境重置完成"
+
+  # ── Step 3: Apply BDD Jobs ───────────────────────────────────────────────────
+  - name: apply-bdd-jobs
+    inputs:
+      artifacts:
+      - name: repo
+        path: /workspace
+        git:
+          repo: "{{workflow.parameters.git-repo}}"
+          revision: "{{workflow.parameters.git-revision}}"
+          depth: 1
+          insecureIgnoreHostKey: true
+    script:
+      image: bitnami/kubectl:1.31
+      command: [bash]
+      source: |
+        echo "=== 套用 BDD Jobs ==="
+        kubectl apply -f /workspace/manifests/pre-sit/30-bdd-jobs.yaml
+        echo "✅ BDD Jobs 已提交"
+
+  # ── Step 4: Wait Phase 1-4 ───────────────────────────────────────────────────
+  - name: wait-phase4
+    script:
+      image: bitnami/kubectl:1.31
+      command: [bash]
+      source: |
+        NS="{{workflow.parameters.ns}}"
+        DEADLINE=$(($(date +%s) + 1800))
+        echo "=== 等待 Phase 4 e2e-decision Job 完成 ==="
+        until kubectl get job presit-phase4-e2e-decision -n "${NS}" \
+            -o jsonpath='{.status.conditions[*].type}' 2>/dev/null \
+            | grep -qE 'Complete|Failed|SuccessCriteriaMet'; do
+          if [ "$(date +%s)" -ge "${DEADLINE}" ]; then
+            echo "❌ TIMEOUT：Phase 4 未在 30 分鐘內完成"
+            exit 1
+          fi
+          echo "  $(date '+%H:%M:%S') 等待中..."
+          sleep 15
+        done
+        STATUS=$(kubectl get job presit-phase4-e2e-decision -n "${NS}" \
+          -o jsonpath='{.status.conditions[*].type}')
+        echo "✅ Phase 4 結束，狀態：${STATUS}"
+        if echo "${STATUS}" | grep -q "Failed"; then
+          echo "❌ Phase 4 失敗"
+          exit 1
+        fi
+
+  # ── Step 5: Read Decision ────────────────────────────────────────────────────
+  - name: read-decision
+    outputs:
+      parameters:
+      - name: decision
+        valueFrom:
+          path: /tmp/decision.txt
+    script:
+      image: bitnami/kubectl:1.31
+      command: [bash]
+      source: |
+        NS="{{workflow.parameters.ns}}"
+        echo "=== 讀取 Phase 4 決策 ==="
+        LOG=$(kubectl logs job/presit-phase4-e2e-decision -n "${NS}" 2>/dev/null)
+        JSON_LINE=$(echo "${LOG}" | grep '"decision"' | tail -1)
+        echo "─────────────────────────────────────"
+        echo "  Pre-SIT 決策: ${JSON_LINE}"
+        echo "─────────────────────────────────────"
+        if echo "${JSON_LINE}" | grep -q '"GO'; then
+          echo "GO" > /tmp/decision.txt
+          echo "✅ Pre-SIT 通過。"
+          echo "   建議 promote: docker tag :<sha> → :sit-approved → push"
+          echo "   Argo Image Updater 偵測後 ArgoCD 將自動更新 SIT"
+        else
+          echo "NOGO" > /tmp/decision.txt
+          echo "❌ Pre-SIT 未通過，不建議 promote"
+          exit 1
+        fi
+
+  # ── Step 6: Check SIT State ──────────────────────────────────────────────────
+  - name: check-sit-state
+    inputs:
+      parameters:
+      - name: decision
+    script:
+      image: bitnami/kubectl:1.31
+      command: [bash]
+      source: |
+        SIT_NS="{{workflow.parameters.sit-ns}}"
+        DECISION="{{inputs.parameters.decision}}"
+        echo "=== ArgoCD SIT Application 狀態 ==="
+        kubectl -n argocd get application petclinic-sit
+        echo ""
+        echo "=== SIT 四個 Deployment 目前 image ==="
+        for d in customers-service vets-service visits-service api-gateway; do
+          printf "  %-22s " "${d}:"
+          kubectl -n "${SIT_NS}" get deployment "${d}" \
+            -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || echo "(找不到)"
+          echo
+        done
+        echo ""
+        echo "=== Pipeline 決策：${DECISION} ==="
+        echo "─── Pipeline 結束。詳細證據請執行 scripts/collect-evidence.sh ───"

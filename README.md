@@ -25,6 +25,7 @@
    - [7.8 v2.3 Per-user SIT Namespace](#78-v23-per-user-sit-namespace每位測試人員獨立沙盒)
    - [7.9 v2.3 完整環境 Quick Start ⭐](#79-v23-完整環境-quick-start)
    - [7.10 v2.3 Postgres PVC Snapshot / Restore](#710-v23-postgres-pvc-snapshot--restore)
+   - [7.11 v2.3 Argo Workflows：取代 Jenkins](#711-v23-argo-workflows取代-jenkins)
 8. [目錄結構說明](#8-目錄結構說明)
 9. [常見問題（FAQ）](#9-常見問題faq)
 10. [延伸學習路徑](#10-延伸學習路徑)
@@ -1258,12 +1259,97 @@ curl -s -H 'Host: sit.local' http://localhost:30080/api/customer/owners | jq len
 
 ---
 
+### 7.11 v2.3 Argo Workflows：取代 Jenkins
+
+> **Branch 策略**：Jenkins 版本保存在 `v2.3-jenkins` 分支；`main` 分支使用 Argo Workflows。
+
+Argo Workflows 是 Kubernetes-native 的工作流程引擎，以 CRD（`Workflow`, `WorkflowTemplate`）取代 Jenkins Pipeline，所有 CI 步驟直接在 Pod 內執行，無需維護 Jenkins controller。
+
+#### 架構對比
+
+| 面向 | Jenkins（v2.3-jenkins 分支） | Argo Workflows（main 分支） |
+|------|-----------------------------|-----------------------------|
+| 部署方式 | Deployment + ClusterIP | Helm chart（argo-workflows） |
+| Pipeline 定義 | `Jenkinsfile`（Groovy） | `WorkflowTemplate`（YAML） |
+| 觸發方式 | UI / curl API | UI / argo CLI / kubectl |
+| 認證 | 無密碼 admin | Server 模式（無需登入，PoC 用） |
+| K8s 整合 | kubectl in-cluster | 原生 `resource` template |
+| 資源佔用 | ~500 MB | ~200 MB |
+
+#### 安裝
+
+```bash
+# 1. 安裝 Argo Workflows（Helm）+ RBAC + WorkflowTemplate + Ingress
+scripts/setup-argo-workflows.sh
+
+# 2. 加入本機 hosts
+echo "127.0.0.1 argo.local" | sudo tee -a /etc/hosts
+
+# 3. 開啟 UI
+echo "Argo Workflows UI: http://argo.local:30080"
+```
+
+#### 手動觸發 Pre-SIT Pipeline
+
+```bash
+# 方法 A：argo CLI
+argo submit --from workflowtemplate/presit-pipeline -n argo --watch
+
+# 方法 B：kubectl（送出後從 UI 追蹤）
+kubectl create -f - <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: presit-pipeline-
+  namespace: argo
+spec:
+  workflowTemplateRef:
+    name: presit-pipeline
+EOF
+
+# 方法 C：UI → Workflow Templates → presit-pipeline → Submit
+```
+
+#### Pipeline 六個步驟（對應 Jenkinsfile Stage）
+
+| Step | Argo Template | 說明 |
+|------|--------------|------|
+| 1 | `preflight` | 驗 kubectl、namespace、ArgoCD Apps 存在 |
+| 2 | `reset-presit` | 清除舊 BDD Jobs/PVC，重啟 Postgres 與 PetClinic |
+| 3 | `apply-bdd-jobs` | git clone + `kubectl apply manifests/pre-sit/30-bdd-jobs.yaml` |
+| 4 | `wait-phase4` | Polling 直到 `presit-phase4-e2e-decision` 完成（timeout 30m） |
+| 5 | `read-decision` | 解析 Phase 4 logs 中 `"decision"` JSON；NOGO 則 fail workflow |
+| 6 | `check-sit-state` | 顯示 ArgoCD SIT Application 狀態 + 四個 Deployment image |
+
+#### 驗收
+
+```bash
+# 確認 WorkflowTemplate 存在
+kubectl -n argo get workflowtemplates
+
+# 追蹤最近一次執行
+argo watch -n argo @latest
+
+# 檢查 Ingress
+curl -s -o /dev/null -w "%{http_code}" -H "Host: argo.local" http://localhost:30080/
+# 預期: 200
+```
+
+> **Argo Workflows 相關檔案**
+> - `manifests/argo-workflows/05-rbac.yaml` — ServiceAccount + Roles（等同 Jenkins SA 權限）
+> - `manifests/argo-workflows/10-install-values.yaml` — Helm values（server 模式、無 TLS）
+> - `manifests/argo-workflows/20-workflow-template.yaml` — 六步 Pipeline WorkflowTemplate
+> - `manifests/argo-workflows/30-ingress.yaml` — `argo.local` → `argo-server:2746`
+> - `scripts/setup-argo-workflows.sh` — 一鍵安裝
+
+---
+
 ## 8. 目錄結構說明
 
 ```
 pre-site-tutorial/
 ├── README.md                              ⭐ 本檔（教學入口）
-├── Jenkinsfile                            ⭐ v2.3 CI/CD pipeline（5-stage orchestrator）
+├── Jenkinsfile                            v2.3 Jenkins pipeline（保留於 v2.3-jenkins 分支）
 ├── Pre-SIT_Work_Plan_v2.md                v2.0 原始工作計畫書
 ├── Pre-SIT_Work_Plan_v2.1.md              ⭐ v2.1 校準後工作計畫書
 ├── Pre-SIT_Gherkin_to_Script_Guide.md     Gherkin → Java 對應教學
@@ -1274,7 +1360,13 @@ pre-site-tutorial/
 │   │   ├── app-pre-sit.yaml               ArgoCD Application（pre-sit，手動 sync）
 │   │   ├── app-sit.yaml                   ArgoCD Application（sit，automated sync + Image Updater）
 │   │   └── appset-sit-users.yaml          ⭐ ApplicationSet（git directory generator，per-user）
-│   ├── jenkins/
+│   ├── argo-workflows/                    ⭐ Argo Workflows（取代 Jenkins，main 分支）
+│   │   ├── 00-namespace.yaml              argo namespace
+│   │   ├── 05-rbac.yaml                   SA + Role（pre-sit）+ ClusterRole（cross-ns）
+│   │   ├── 10-install-values.yaml         Helm values（server 模式，無 TLS）
+│   │   ├── 20-workflow-template.yaml      ⭐ presit-pipeline WorkflowTemplate（6 步）
+│   │   └── 30-ingress.yaml                Ingress: argo.local → argo-server:2746
+│   ├── jenkins/                           Jenkins（保留於 v2.3-jenkins 分支）
 │   │   ├── 00-namespace.yaml              Jenkins namespace
 │   │   ├── 05-rbac.yaml                   SA + Role（pre-sit）+ ClusterRole（cross-ns）
 │   │   ├── 10-jenkins.yaml                Jenkins 2.492.3 Deployment + ClusterIP Service
@@ -1317,7 +1409,8 @@ pre-site-tutorial/
 │   ├── create-sit-user.sh                 建立 per-user SIT namespace（直接 / GitOps）
 │   ├── delete-sit-user.sh                 刪除 per-user SIT namespace（直接 / GitOps）
 │   ├── snapshot-db.sh                     ⭐ Postgres pg_dump 快照（sit / sit-<user>）
-│   └── restore-db.sh                      ⭐ Postgres pg_restore 還原
+│   ├── restore-db.sh                      ⭐ Postgres pg_restore 還原
+│   └── setup-argo-workflows.sh            ⭐ Argo Workflows 一鍵安裝
 │
 └── presit-bdd-demo/                       v2.0 原始 demo 與 v2.1 PoC
     ├── features/                          v2.0 demo: Gherkin

@@ -1,0 +1,23 @@
+# Helm values for argo/argo-workflows
+# 安裝指令:
+#   helm upgrade --install argo-workflows argo/argo-workflows \
+#     -n argo --create-namespace \
+#     -f manifests/argo-workflows/10-install-values.yaml
+
+server:
+  # PoC 模式：不需登入，直接使用 UI
+  authModes:
+  - server
+  secure: false
+  extraArgs:
+  - --auth-mode=server
+
+workflow:
+  serviceAccount:
+    create: true
+    name: argo-workflow
+
+controller:
+  # 限定只管理 argo namespace 的 Workflow
+  workflowNamespaces:
+  - argo
