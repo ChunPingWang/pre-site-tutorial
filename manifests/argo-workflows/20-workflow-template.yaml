@@ -73,6 +73,7 @@ spec:
         echo "=== 清除舊 BDD Jobs ==="
         kubectl delete jobs -n "${NS}" -l app=presit-validation 2>&1 | head -10 || true
         echo "=== 清除舊 Reports PVC ==="
+        kubectl delete job presit-ui-screenshot -n "${NS}" --ignore-not-found >/dev/null
         kubectl scale deployment report-server -n "${NS}" --replicas=0 2>/dev/null || true
         kubectl wait pod -n "${NS}" -l app=report-server --for=delete --timeout=30s 2>/dev/null || true
         kubectl delete pvc presit-reports -n "${NS}" 2>&1 | head -3 || true
