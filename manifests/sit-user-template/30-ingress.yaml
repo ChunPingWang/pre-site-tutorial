@@ -1,0 +1,25 @@
+---
+# 使用方式:
+#   1) 編輯 /etc/hosts 加: 127.0.0.1 ${USERNAME}-sit.local
+#   2) 瀏覽器開 http://${USERNAME}-sit.local:30080/
+#   3) curl: curl -H 'Host: ${USERNAME}-sit.local' http://localhost:30080/api/customer/owners
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: petclinic
+  namespace: ${NS}
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: ${USERNAME}-sit.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: api-gateway
+            port:
+              number: 8080

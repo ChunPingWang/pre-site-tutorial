@@ -973,6 +973,65 @@ kubectl get secret petclinic-db-credentials -n pre-sit \
 # 預期: petclinic
 ```
 
+### 7.8 v2.3 Per-user SIT Namespace：每位測試人員獨立沙盒
+
+多人同時測試時，共用一個 SIT namespace 會互相污染資料。v2.3 新增一行指令即可為任意使用者建立完整隔離的 SIT 環境（獨立 Postgres、獨立 Ingress host）。
+
+#### 設計原則
+
+| 決策 | 理由 |
+|------|------|
+| namespace = `sit-<username>` | K8s namespace 是最便宜的隔離邊界 |
+| 每個 namespace 獨立封存 SealedSecret | Bitnami Sealed Secrets 是 namespace-scoped，同一明文在不同 namespace 有不同密文 |
+| Ingress host = `<username>-sit.local` | nginx-ingress 依 Host header 路由，不需額外 port |
+| `envsubst` 模板 | 無 Helm 依賴；`manifests/sit-user-template/` 只是帶 `${VAR}` 的純 YAML |
+| 刪除即清理 | `kubectl delete namespace sit-<username>` 級聯刪除所有資源含 PVC |
+
+#### 快速建立
+
+```bash
+# 建立 sit-alice
+scripts/create-sit-user.sh alice
+
+# 指定 image tag（預設 v2.2）
+scripts/create-sit-user.sh bob v2.3
+
+# 刪除
+scripts/delete-sit-user.sh alice
+```
+
+腳本執行流程：
+1. 建立 `sit-<username>` namespace
+2. 從 `sit` namespace 讀取現有已解封 credentials → `kubeseal` 重新封存為新 namespace
+3. `envsubst` 展開 `manifests/sit-user-template/` 所有 YAML → `kubectl apply`
+4. 等待 Postgres rollout → 等待所有 PetClinic pods Ready
+5. 印出 hosts 設定與 curl 驗收指令
+
+#### 存取方式
+
+```bash
+# 1. 加入 /etc/hosts
+echo '127.0.0.1 alice-sit.local' | sudo tee -a /etc/hosts
+
+# 2. 瀏覽器
+open http://alice-sit.local:30080/
+
+# 3. curl 驗收
+curl -s -H 'Host: alice-sit.local' http://localhost:30080/api/customer/owners | jq length
+# 預期: 10
+```
+
+#### 模板檔案位置
+
+```
+manifests/sit-user-template/
+├── 00-namespace.yaml        namespace (${NS}, sit-user label)
+├── 05-config.yaml           ConfigMap (POSTGRES_HOST / URIs 全指向 ${NS})
+├── 10-postgres.yaml         StatefulSet + Service (1Gi PVC)
+├── 20-petclinic-services.yaml  4 Services + 4 Deployments (image tag = ${IMAGE_TAG})
+└── 30-ingress.yaml          Ingress host = ${USERNAME}-sit.local
+```
+
 ---
 
 ## 8. 目錄結構說明
@@ -1002,8 +1061,20 @@ pre-site-tutorial/
 │   │   └── 30-bdd-jobs.yaml               4 Phase Jobs + PVC（Jenkins 每次 apply）
 │   ├── sealed-secrets/
 │   │   └── values.yaml                    Sealed Secrets controller Helm values
-│   └── sit/                               SIT namespace manifests（ArgoCD 管理）
-│       └── 06-sealed-db-credentials.yaml  ⭐ SIT DB 密碼 SealedSecret（已加入 kustomization）
+│   ├── sit/                               SIT namespace manifests（ArgoCD 管理）
+│   │   └── 06-sealed-db-credentials.yaml  ⭐ SIT DB 密碼 SealedSecret（已加入 kustomization）
+│   └── sit-user-template/                 ⭐ Per-user SIT namespace 模板（envsubst）
+│       ├── 00-namespace.yaml
+│       ├── 05-config.yaml
+│       ├── 10-postgres.yaml
+│       ├── 20-petclinic-services.yaml
+│       └── 30-ingress.yaml
+│
+├── scripts/
+│   ├── setup-monitoring.sh                ⭐ 一鍵安裝 Prometheus + Grafana + Loki
+│   ├── setup-sealed-secrets.sh            ⭐ 一鍵安裝 Sealed Secrets controller
+│   ├── create-sit-user.sh                 ⭐ 建立 per-user SIT namespace
+│   └── delete-sit-user.sh                 刪除 per-user SIT namespace
 │
 └── presit-bdd-demo/                       v2.0 原始 demo 與 v2.1 PoC
     ├── features/                          v2.0 demo: Gherkin
@@ -1085,6 +1156,7 @@ mvn test -Dcucumber.filter.tags="@critical and not @known-issue"
 | CI/CD 整合（已實作 v2.3） | Jenkins 部署在 Kind 內；`manifests/jenkins/` + `Jenkinsfile` 已就緒，見 [§7.5](#75-v23-stage-cjenkins-cicd-自動化-在-kind-內) |
 | 觀測性（已實作 v2.3） | Prometheus + Grafana + Loki 已部署；`manifests/monitoring/` + `scripts/setup-monitoring.sh`，見 [§7.6](#76-v23-observabilityprometheus--grafana--loki) |
 | 明文密碼消除（已實作 v2.3） | Sealed Secrets controller 替換明文 Secret；`manifests/sealed-secrets/` + `06-sealed-db-credentials.yaml`，見 [§7.7](#77-v23-sealed-secrets消除-git-明文密碼) |
+| 多人共用 SIT 資料互污（已實作 v2.3） | 一行指令建立隔離 namespace；`scripts/create-sit-user.sh <username>`，見 [§7.8](#78-v23-per-user-sit-namespace每位測試人員獨立沙盒) |
 
 ---
 

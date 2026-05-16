@@ -1,0 +1,41 @@
+---
+apiVersion: v1
+kind: Service
+metadata: { name: postgres, namespace: ${NS}, labels: { app: postgres } }
+spec:
+  ports: [{ port: 5432, name: postgres }]
+  selector: { app: postgres }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: postgres, namespace: ${NS}, labels: { app: postgres } }
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector: { matchLabels: { app: postgres } }
+  template:
+    metadata: { labels: { app: postgres } }
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        ports: [{ containerPort: 5432, name: postgres }]
+        env:
+        - { name: POSTGRES_DB, valueFrom: { configMapKeyRef: { name: petclinic-db-config, key: POSTGRES_DB } } }
+        - { name: POSTGRES_USER, valueFrom: { secretKeyRef: { name: petclinic-db-credentials, key: POSTGRES_USER } } }
+        - { name: POSTGRES_PASSWORD, valueFrom: { secretKeyRef: { name: petclinic-db-credentials, key: POSTGRES_PASSWORD } } }
+        - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
+        volumeMounts:
+        - { name: data, mountPath: /var/lib/postgresql/data }
+        readinessProbe:
+          exec: { command: ["pg_isready", "-U", "petclinic", "-d", "petclinic"] }
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests: { cpu: 100m, memory: 256Mi }
+          limits:   { cpu: 500m, memory: 512Mi }
+  volumeClaimTemplates:
+  - metadata: { name: data }
+    spec:
+      accessModes: [ReadWriteOnce]
+      resources: { requests: { storage: 1Gi } }
