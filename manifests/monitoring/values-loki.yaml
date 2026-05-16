@@ -1,0 +1,35 @@
+# Loki Stack (Loki + Promtail) — Kind PoC 精簡設定
+# helm install loki grafana/loki-stack -f this-file -n monitoring
+
+loki:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 2Gi
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits:   { cpu: 500m, memory: 256Mi }
+  config:
+    chunk_store_config:
+      max_look_back_period: 72h
+    table_manager:
+      retention_deletes_enabled: true
+      retention_period: 72h
+
+promtail:
+  enabled: true
+  resources:
+    requests: { cpu: 50m,  memory: 64Mi }
+    limits:   { cpu: 200m, memory: 128Mi }
+  config:
+    snippets:
+      # 額外 pipeline：標記 pre-sit / sit / jenkins namespace
+      extraRelabelConfigs:
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        target_label: app
+
+# 不另外裝 Grafana（使用 kube-prometheus-stack 那個）
+grafana:
+  enabled: false

@@ -1,0 +1,58 @@
+# kube-prometheus-stack — Kind PoC 精簡設定
+# helm install kube-prometheus monitoring/kube-prometheus-stack -f this-file -n monitoring
+
+grafana:
+  adminPassword: "presit-admin"
+  service:
+    type: NodePort
+    nodePort: 30300
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits:   { cpu: 500m, memory: 256Mi }
+  additionalDataSources:
+  - name: Loki
+    type: loki
+    url: http://loki.monitoring.svc.cluster.local:3100
+    access: proxy
+    isDefault: false
+  grafana.ini:
+    server:
+      root_url: "%(protocol)s://%(domain)s:%(http_port)s"
+
+prometheus:
+  prometheusSpec:
+    retention: 7d
+    resources:
+      requests: { cpu: 200m, memory: 256Mi }
+      limits:   { cpu: 1,    memory: 512Mi }
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: [ReadWriteOnce]
+          resources: { requests: { storage: 4Gi } }
+    # 允許跨 namespace 抓 ServiceMonitor
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector: {}
+    serviceMonitorNamespaceSelector: {}
+    podMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelector: {}
+    podMonitorNamespaceSelector: {}
+
+alertmanager:
+  enabled: false
+
+nodeExporter:
+  enabled: true
+
+kubeStateMetrics:
+  enabled: true
+
+# 關掉 Kind 不支援的 scrape targets
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeProxy:
+  enabled: false

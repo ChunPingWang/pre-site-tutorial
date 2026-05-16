@@ -1,0 +1,176 @@
+---
+# Grafana 自動載入 dashboard — 透過 sidecar ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: presit-overview-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  presit-overview.json: |
+    {
+      "title": "Pre-SIT Pipeline Overview",
+      "uid": "presit-overview",
+      "tags": ["pre-sit", "bdd", "pipeline"],
+      "timezone": "browser",
+      "schemaVersion": 36,
+      "refresh": "30s",
+      "time": { "from": "now-3h", "to": "now" },
+      "panels": [
+        {
+          "id": 1,
+          "type": "stat",
+          "title": "Pre-SIT Services UP",
+          "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+          "options": { "colorMode": "background", "graphMode": "none" },
+          "targets": [{
+            "expr": "count(up{namespace=\"pre-sit\", job=~\".*petclinic.*\"} == 1)",
+            "legendFormat": "UP"
+          }],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": { "steps": [
+                {"color": "red",   "value": 0},
+                {"color": "yellow","value": 2},
+                {"color": "green", "value": 4}
+              ]}
+            }
+          }
+        },
+        {
+          "id": 2,
+          "type": "stat",
+          "title": "SIT Services UP",
+          "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+          "options": { "colorMode": "background", "graphMode": "none" },
+          "targets": [{
+            "expr": "count(up{namespace=\"sit\", job=~\".*petclinic.*\"} == 1)",
+            "legendFormat": "UP"
+          }],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": { "steps": [
+                {"color": "red",   "value": 0},
+                {"color": "yellow","value": 2},
+                {"color": "green", "value": 4}
+              ]}
+            }
+          }
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "HTTP Request Rate — Pre-SIT (req/s)",
+          "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+          "targets": [{
+            "expr": "sum by (uri, namespace) (rate(http_server_requests_seconds_count{namespace=\"pre-sit\"}[1m]))",
+            "legendFormat": "{{namespace}}/{{uri}}"
+          }]
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "HTTP P95 Latency — Pre-SIT (ms)",
+          "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+          "targets": [{
+            "expr": "histogram_quantile(0.95, sum by (le, uri) (rate(http_server_requests_seconds_bucket{namespace=\"pre-sit\"}[5m]))) * 1000",
+            "legendFormat": "p95 {{uri}}"
+          }]
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "JVM Heap Used — Pre-SIT (MB)",
+          "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+          "targets": [{
+            "expr": "jvm_memory_used_bytes{namespace=\"pre-sit\", area=\"heap\"} / 1024 / 1024",
+            "legendFormat": "{{pod}}"
+          }]
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "JVM Heap Used — SIT (MB)",
+          "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+          "targets": [{
+            "expr": "jvm_memory_used_bytes{namespace=\"sit\", area=\"heap\"} / 1024 / 1024",
+            "legendFormat": "{{pod}}"
+          }]
+        },
+        {
+          "id": 7,
+          "type": "timeseries",
+          "title": "HTTP Error Rate 5xx — Pre-SIT & SIT",
+          "gridPos": { "x": 0, "y": 20, "w": 24, "h": 8 },
+          "targets": [
+            {
+              "expr": "sum by (namespace) (rate(http_server_requests_seconds_count{status=~\"5..\", namespace=~\"pre-sit|sit\"}[1m]))",
+              "legendFormat": "5xx {{namespace}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "fixed", "fixedColor": "red" }
+            }
+          }
+        }
+      ]
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: presit-logs-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  presit-logs.json: |
+    {
+      "title": "Pre-SIT / SIT Logs (Loki)",
+      "uid": "presit-logs",
+      "tags": ["pre-sit", "sit", "logs", "loki"],
+      "timezone": "browser",
+      "schemaVersion": 36,
+      "refresh": "30s",
+      "time": { "from": "now-1h", "to": "now" },
+      "panels": [
+        {
+          "id": 1,
+          "type": "logs",
+          "title": "Pre-SIT Application Logs",
+          "gridPos": { "x": 0, "y": 0, "w": 24, "h": 12 },
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [{
+            "expr": "{namespace=\"pre-sit\"}",
+            "legendFormat": ""
+          }],
+          "options": { "showLabels": true, "showTime": true, "sortOrder": "Descending" }
+        },
+        {
+          "id": 2,
+          "type": "logs",
+          "title": "SIT Application Logs",
+          "gridPos": { "x": 0, "y": 12, "w": 24, "h": 12 },
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [{
+            "expr": "{namespace=\"sit\"}",
+            "legendFormat": ""
+          }],
+          "options": { "showLabels": true, "showTime": true, "sortOrder": "Descending" }
+        },
+        {
+          "id": 3,
+          "type": "logs",
+          "title": "BDD Runner Logs (Pre-SIT Jobs)",
+          "gridPos": { "x": 0, "y": 24, "w": 24, "h": 10 },
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [{
+            "expr": "{namespace=\"pre-sit\", app=~\"presit-phase.*\"}",
+            "legendFormat": ""
+          }],
+          "options": { "showLabels": true, "showTime": true, "sortOrder": "Descending" }
+        }
+      ]
+    }
