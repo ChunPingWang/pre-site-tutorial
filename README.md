@@ -839,6 +839,75 @@ kubectl exec -n jenkins deploy/jenkins -- \
 - Jenkins 無法收到 GitHub webhook（Kind 不對外）→ 手動觸發或 polling SCM
 - Image build（mvn package + docker build/push）留給 v2.4 用 kaniko 或 DinD sidecar
 
+### 7.6 v2.3 Observability：Prometheus + Grafana + Loki
+
+集中觀測 pre-sit 和 SIT 兩個環境的 metrics 與 logs，無需 kubectl exec 就能看到服務健康狀態。
+
+#### 元件
+
+| 元件 | 用途 | 安裝方式 |
+|------|------|---------|
+| Prometheus | 抓取所有 PetClinic `/actuator/prometheus` metrics | kube-prometheus-stack Helm |
+| Grafana | 視覺化儀表板 | kube-prometheus-stack Helm（NodePort 30300） |
+| Loki | log 聚合（pre-sit / sit / jenkins / bdd runner） | grafana/loki-stack Helm |
+| Promtail | 各 pod log 收集 DaemonSet | grafana/loki-stack Helm |
+
+#### 一鍵安裝
+
+```bash
+bash scripts/setup-monitoring.sh
+```
+
+或分步驟：
+
+```bash
+helm upgrade --install kube-prometheus prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --values manifests/monitoring/values-kube-prometheus.yaml \
+  --set grafana.sidecar.dashboards.enabled=true \
+  --set grafana.sidecar.dashboards.label=grafana_dashboard \
+  --wait
+
+helm upgrade --install loki grafana/loki-stack \
+  --namespace monitoring \
+  --values manifests/monitoring/values-loki.yaml \
+  --wait
+
+kubectl apply -f manifests/monitoring/10-servicemonitors.yaml
+kubectl apply -f manifests/monitoring/20-dashboards.yaml
+```
+
+> **Kind 注意**：需先提高 inotify 限制（Promtail DaemonSet 需要）：
+> ```bash
+> docker exec presit-control-plane sysctl -w \
+>   fs.inotify.max_user_instances=512 \
+>   fs.inotify.max_user_watches=524288
+> ```
+
+#### 訪問 Grafana
+
+```
+http://<kind-node-ip>:30300    帳號: admin  密碼: presit-admin
+```
+
+內建兩個 Dashboard：
+- **Pre-SIT Pipeline Overview** — HTTP request rate、P95 latency、JVM heap、5xx error rate（pre-sit + SIT 對比）
+- **Pre-SIT / SIT Logs (Loki)** — 三個 log panel：pre-sit、SIT、BDD runner jobs
+
+#### 驗收指標
+
+```bash
+# 確認 8 個 PetClinic 服務都被 Prometheus 抓到
+kubectl port-forward -n monitoring svc/kube-prometheus-kube-prome-prometheus 9090:9090 &
+curl -s 'http://localhost:9090/api/v1/targets?state=active' | \
+  python3 -c "
+import sys,json; d=json.load(sys.stdin)
+t=[x for x in d['data']['activeTargets'] if x['labels'].get('namespace') in ('pre-sit','sit')]
+print(f'{sum(1 for x in t if x[\"health\"]==\"up\")}/{len(t)} petclinic targets up')
+"
+# 預期輸出: 8/8 petclinic targets up
+```
+
 ---
 
 ## 8. 目錄結構說明
@@ -857,6 +926,12 @@ pre-site-tutorial/
 │   │   ├── 00-namespace.yaml              Jenkins namespace
 │   │   ├── 05-rbac.yaml                   SA + Role（pre-sit）+ ClusterRole（cross-ns）
 │   │   └── 10-jenkins.yaml                Jenkins 2.492.3 Deployment + NodePort 30808
+│   ├── monitoring/
+│   │   ├── 00-namespace.yaml              monitoring namespace
+│   │   ├── values-kube-prometheus.yaml    Prometheus + Grafana Helm values
+│   │   ├── values-loki.yaml               Loki + Promtail Helm values
+│   │   ├── 10-servicemonitors.yaml        8 個 ServiceMonitor（pre-sit + sit 各 4 服務）
+│   │   └── 20-dashboards.yaml             2 個 Grafana dashboard ConfigMap
 │   ├── pre-sit/
 │   │   ├── 25-presit-sa.yaml              ⭐ BDD runner SA/Role/RoleBinding（一次性 setup）
 │   │   └── 30-bdd-jobs.yaml               4 Phase Jobs + PVC（Jenkins 每次 apply）
@@ -940,6 +1015,7 @@ mvn test -Dcucumber.filter.tags="@critical and not @known-issue"
 | 真正用 Postgres 而非 HSQLDB | 重 build PetClinic 服務、加入 postgres profile |
 | ArgoCD 接真正的 Git | `argocd/petclinic-pre-sit.yaml` 改 `repoURL` |
 | CI/CD 整合（已實作 v2.3） | Jenkins 部署在 Kind 內；`manifests/jenkins/` + `Jenkinsfile` 已就緒，見 [§7.5](#75-v23-stage-cjenkins-cicd-自動化-在-kind-內) |
+| 觀測性（已實作 v2.3） | Prometheus + Grafana + Loki 已部署；`manifests/monitoring/` + `scripts/setup-monitoring.sh`，見 [§7.6](#76-v23-observabilityprometheus--grafana--loki) |
 
 ---
 
