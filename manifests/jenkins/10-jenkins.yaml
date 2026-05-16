@@ -1,0 +1,131 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: { name: jenkins-home, namespace: jenkins }
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 2Gi } }
+---
+# Pre-baked Pipeline job XML，啟動時透過 init-container 寫到 JENKINS_HOME
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: jenkins-seed-job, namespace: jenkins }
+data:
+  config.xml: |
+    <?xml version='1.1' encoding='UTF-8'?>
+    <flow-definition plugin="workflow-job@1316.vd2290d3341a_f">
+      <description>v2.2 Pre-SIT BDD chain orchestrator (v2.3 Stage C)</description>
+      <keepDependencies>false</keepDependencies>
+      <definition class="org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition" plugin="workflow-cps@3958.vb_a_24a_53edcd5">
+        <scm class="hudson.plugins.git.GitSCM" plugin="git@5.2.1">
+          <configVersion>2</configVersion>
+          <userRemoteConfigs>
+            <hudson.plugins.git.UserRemoteConfig>
+              <url>https://github.com/ChunPingWang/pre-site-tutorial.git</url>
+            </hudson.plugins.git.UserRemoteConfig>
+          </userRemoteConfigs>
+          <branches>
+            <hudson.plugins.git.BranchSpec>
+              <name>*/main</name>
+            </hudson.plugins.git.BranchSpec>
+          </branches>
+        </scm>
+        <scriptPath>Jenkinsfile</scriptPath>
+        <lightweight>true</lightweight>
+      </definition>
+      <triggers/>
+      <disabled>false</disabled>
+    </flow-definition>
+---
+apiVersion: v1
+kind: Service
+metadata: { name: jenkins, namespace: jenkins }
+spec:
+  type: NodePort
+  ports:
+  - { name: http,  port: 8080, targetPort: 8080, nodePort: 30808 }
+  - { name: agent, port: 50000, targetPort: 50000 }
+  selector: { app: jenkins }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: jenkins, namespace: jenkins, labels: { app: jenkins } }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }   # PVC 不能多 pod 共寫
+  selector: { matchLabels: { app: jenkins } }
+  template:
+    metadata: { labels: { app: jenkins } }
+    spec:
+      serviceAccountName: jenkins
+      securityContext: { fsGroup: 1000, runAsUser: 1000 }
+      initContainers:
+      # 1) 安裝 kubectl 進 shared volume 讓 pipeline 用
+      - name: install-kubectl
+        image: bitnami/kubectl:latest
+        command:
+        - sh
+        - -c
+        - 'cp /opt/bitnami/kubectl/bin/kubectl /shared/kubectl && chmod +x /shared/kubectl'
+        volumeMounts:
+        - { name: shared, mountPath: /shared }
+      # 2) 安裝必要 plugins (workflow + git) — jenkins-plugin-cli 寫到 JENKINS_HOME/plugins
+      - name: install-plugins
+        image: jenkins/jenkins:2.492.3-lts-jdk17
+        command:
+        - sh
+        - -c
+        - |
+          jenkins-plugin-cli --plugin-download-directory /jenkins-home/plugins --plugins \
+            workflow-aggregator \
+            git \
+            pipeline-stage-view \
+            timestamper \
+            ansicolor \
+            configuration-as-code \
+            kubernetes-credentials-provider
+        volumeMounts:
+        - { name: home, mountPath: /jenkins-home }
+      # 3) 預載 seed job
+      - name: install-seed-job
+        image: alpine:3.19
+        command:
+        - sh
+        - -c
+        - |
+          mkdir -p /jenkins-home/jobs/petclinic-presit
+          cp /seed/config.xml /jenkins-home/jobs/petclinic-presit/config.xml
+          echo "2.492.3" > /jenkins-home/jenkins.install.UpgradeWizard.state
+          echo "2.492.3" > /jenkins-home/jenkins.install.InstallUtil.lastExecVersion
+        volumeMounts:
+        - { name: home, mountPath: /jenkins-home }
+        - { name: seed, mountPath: /seed }
+      containers:
+      - name: jenkins
+        image: jenkins/jenkins:2.492.3-lts-jdk17
+        env:
+        - name: JAVA_OPTS
+          value: "-Djenkins.install.runSetupWizard=false -Dhudson.security.csrf.GlobalCrumbIssuerConfiguration.DISABLE_CSRF_PROTECTION=true"
+        - name: JENKINS_OPTS
+          value: "--prefix=/"
+        ports:
+        - { containerPort: 8080, name: http }
+        - { containerPort: 50000, name: agent }
+        volumeMounts:
+        - { name: home,   mountPath: /var/jenkins_home }
+        - { name: shared, mountPath: /shared }
+        readinessProbe:
+          httpGet: { path: /login, port: 8080 }
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          failureThreshold: 30
+        resources:
+          requests: { cpu: 200m, memory: 512Mi }
+          limits:   { cpu: 2,    memory: 1500Mi }
+      volumes:
+      - name: home
+        persistentVolumeClaim: { claimName: jenkins-home }
+      - name: shared
+        emptyDir: {}
+      - name: seed
+        configMap: { name: jenkins-seed-job }
