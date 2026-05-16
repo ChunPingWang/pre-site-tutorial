@@ -61,15 +61,16 @@ pipeline {
             steps {
                 sh '''
                   # kubectl wait 不支援兩個 --for 條件的 OR 語意；用 polling 代替
+                  # K8s 1.29+ 新增 SuccessCriteriaMet condition，出現在 Complete 之前
                   DEADLINE=$(($(date +%s) + 1800))
                   until ${KUBECTL} get job presit-phase4-e2e-decision -n ${NS} \
-                      -o jsonpath='{.status.conditions[0].type}' 2>/dev/null \
-                      | grep -qE 'Complete|Failed'; do
+                      -o jsonpath='{.status.conditions[*].type}' 2>/dev/null \
+                      | grep -qE 'Complete|Failed|SuccessCriteriaMet'; do
                     [ $(date +%s) -ge ${DEADLINE} ] && echo "TIMEOUT" && exit 1
                     sleep 15
                   done
                   echo "Phase 4 done: $(${KUBECTL} get job presit-phase4-e2e-decision -n ${NS} \
-                      -o jsonpath='{.status.conditions[0].type}')"
+                      -o jsonpath='{.status.conditions[*].type}')"
                 '''
             }
         }
