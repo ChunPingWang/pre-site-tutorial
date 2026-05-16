@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- 05-config.yaml
+- 10-postgres.yaml
+- 20-petclinic-services.yaml
+- 30-ingress.yaml
+
+images:
+- name: localhost:5000/petclinic-customers-service
+  newTag: v2.2
+- name: localhost:5000/petclinic-vets-service
+  newTag: v2.2
+- name: localhost:5000/petclinic-visits-service
+  newTag: v2.2
+- name: localhost:5000/petclinic-api-gateway
+  newTag: v2.2

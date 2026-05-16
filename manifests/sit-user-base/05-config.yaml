@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: petclinic-db-config
+data:
+  POSTGRES_HOST: "postgres.sit-user-placeholder.svc"
+  POSTGRES_DB: "petclinic"
+  SPRING_PROFILES_ACTIVE: "sit"
+  CUSTOMERS_SERVICE_URI: "http://customers-service.sit-user-placeholder.svc:8081"
+  VETS_SERVICE_URI:      "http://vets-service.sit-user-placeholder.svc:8083"
+  VISITS_SERVICE_URI:    "http://visits-service.sit-user-placeholder.svc:8082"
+  JAVA_TOOL_OPTIONS: "-Xmx256m -XX:MaxMetaspaceSize=160m -XX:ReservedCodeCacheSize=48m"

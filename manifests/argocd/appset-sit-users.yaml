@@ -1,0 +1,63 @@
+# v2.3 Per-user SIT Namespace — ArgoCD ApplicationSet
+#
+# Git directory generator：掃描 manifests/sit-users/ 下的每個子目錄。
+# 新增使用者只需 scripts/create-sit-user.sh --gitops <username> push 到 git，
+# ArgoCD 即自動建立 Application 並 sync 整個 namespace。
+#
+# 刪除使用者：從 git 移除 manifests/sit-users/<username>/ 目錄，
+# ArgoCD 偵測到後會自動刪除對應 Application（finalizer 確保 K8s 資源也被清理）。
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: petclinic-sit-users
+  namespace: argocd
+spec:
+  # 當 generator 產生的元素消失時，自動刪除對應 Application
+  syncPolicy:
+    preserveResourcesOnDeletion: false
+
+  generators:
+  - git:
+      repoURL: https://github.com/ChunPingWang/pre-site-tutorial.git
+      revision: main
+      directories:
+      - path: manifests/sit-users/*
+
+  template:
+    metadata:
+      # path.basename = 目錄名稱（即 username）
+      name: petclinic-sit-{{path.basename}}
+      namespace: argocd
+      finalizers:
+      - resources-finalizer.argocd.argoproj.io
+      annotations:
+        # 讓 ArgoCD UI 顯示是哪個使用者的環境
+        sit-user: '{{path.basename}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/ChunPingWang/pre-site-tutorial.git
+        targetRevision: main
+        # 每個使用者有自己的 Kustomize overlay 目錄
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: sit-{{path.basename}}
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true
+        - ServerSideApply=true
+      ignoreDifferences:
+      # StatefulSet volumeClaimTemplates 一旦建立 K8s 會自動補欄位，永久 OutOfSync，必須 ignore
+      - group: apps
+        kind: StatefulSet
+        jsonPointers:
+        - /spec/volumeClaimTemplates
+      # SealedSecret encryptedData 可能因 controller 版本或輪換略有差異
+      - group: bitnami.com
+        kind: SealedSecret
+        jsonPointers:
+        - /spec/encryptedData
