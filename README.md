@@ -835,9 +835,9 @@ kubectl wait -n jenkins deployment/jenkins \
 > **帳密**：Jenkins 採用 `JENKINS_OPTS="--argumentsRealm.passwd.admin= --argumentsRealm.roles.admin=admin"` 設定，**無需帳號密碼**，直接開啟 UI 即可操作。CSRF 保護亦已停用，方便 curl / API 觸發。
 
 ```bash
-# 從 Kind 節點 IP 進入 Jenkins UI
-NODE_IP=$(kubectl get node presit-control-plane -o jsonpath='{.status.addresses[0].address}')
-echo "Jenkins UI: http://${NODE_IP}:30808"   # 無密碼，直接登入
+# 從 Ingress 進入 Jenkins UI（無密碼）
+# 先加入 /etc/hosts：echo "127.0.0.1 jenkins.local" | sudo tee -a /etc/hosts
+echo "Jenkins UI: http://jenkins.local:30080"
 
 # 或用 API 直接觸發（CSRF 已停用）
 kubectl exec -n jenkins deploy/jenkins -- \
@@ -869,7 +869,7 @@ kubectl exec -n jenkins deploy/jenkins -- \
 | 元件 | 用途 | 安裝方式 |
 |------|------|---------|
 | Prometheus | 抓取所有 PetClinic `/actuator/prometheus` metrics | kube-prometheus-stack Helm |
-| Grafana | 視覺化儀表板 | kube-prometheus-stack Helm（NodePort 30300） |
+| Grafana | 視覺化儀表板 | kube-prometheus-stack Helm（Ingress: grafana.local） |
 | Loki | log 聚合（pre-sit / sit / jenkins / bdd runner） | grafana/loki-stack Helm |
 | Promtail | 各 pod log 收集 DaemonSet | grafana/loki-stack Helm |
 
@@ -908,7 +908,8 @@ kubectl apply -f manifests/monitoring/20-dashboards.yaml
 #### 訪問 Grafana
 
 ```
-http://<kind-node-ip>:30300    帳號: admin  密碼: presit-admin
+http://grafana.local:30080    帳號: admin  密碼: presit-admin
+# （需先加入 /etc/hosts：echo "127.0.0.1 grafana.local" | sudo tee -a /etc/hosts）
 ```
 
 內建兩個 Dashboard：
@@ -1108,8 +1109,8 @@ Step 4/9  PetClinic image build + push   4 服務 + BDD runner，tag :v2.2
 Step 5/9  Sealed Secrets                 controller + SealedSecrets（pre-sit / sit）
 Step 6/9  pre-sit RBAC                   BDD runner SA/Role/RoleBinding（一次性）
 Step 7/9  ArgoCD Applications            app-pre-sit + app-sit + appset-sit-users
-Step 8/9  Jenkins                        2.492.3-lts，NodePort :30808
-Step 9/9  Observability                  Prometheus + Grafana(:30300) + Loki + Promtail
+Step 8/9  Jenkins                        2.492.3-lts，Ingress: jenkins.local
+Step 9/9  Observability                  Prometheus + Grafana(grafana.local) + Loki + Promtail
 ```
 
 > **Kind inotify 限制**：Step 9 會自動執行
@@ -1131,7 +1132,7 @@ curl -s -H 'Host: sit.local' http://localhost:30080/api/customer/owners | python
 # 預期：10 owners
 
 # 3. Jenkins 可到達
-curl -s -o /dev/null -w "%{http_code}" http://${NODE_IP}:30808
+curl -s -o /dev/null -w "%{http_code}" -H "Host: jenkins.local" http://localhost:30080/
 # 預期：200 或 403
 
 # 4. Prometheus targets
@@ -1151,16 +1152,27 @@ kubectl get sealedsecret -A
 
 #### 存取 URL 總表
 
+所有服務統一透過 nginx-ingress（NodePort **:30080**）對外，不需記多個 port：
+
 | 服務 | URL | 帳密 |
 |------|-----|------|
-| SIT PetClinic UI | `http://<node-ip>:30080` (`Host: sit.local`) | — |
-| Jenkins | `http://<node-ip>:30808` | 無密碼 |
-| Grafana | `http://<node-ip>:30300` | admin / presit-admin |
-| ArgoCD UI | `kubectl -n argocd port-forward svc/argocd-server 8080:443` → https://localhost:8080 | admin / `kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' \| base64 -d` |
+| SIT PetClinic UI | `http://sit.local:30080/` | — |
+| Jenkins | `http://jenkins.local:30080/` | 無密碼 |
+| Grafana | `http://grafana.local:30080/` | admin / presit-admin |
+| ArgoCD UI | `http://argocd.local:30080/` | admin / 見下方指令 |
+| Per-user SIT | `http://<username>-sit.local:30080/` | — |
 
-/etc/hosts（加入後瀏覽器可直接開）：
+ArgoCD 初始密碼：
 ```bash
-echo "127.0.0.1 sit.local" | sudo tee -a /etc/hosts
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath='{.data.password}' | base64 -d && echo
+```
+
+/etc/hosts（一次加入所有 host）：
+```bash
+sudo tee -a /etc/hosts <<'EOF'
+127.0.0.1 sit.local jenkins.local grafana.local argocd.local
+EOF
 ```
 
 #### 下一步
@@ -1202,7 +1214,8 @@ pre-site-tutorial/
 │   ├── jenkins/
 │   │   ├── 00-namespace.yaml              Jenkins namespace
 │   │   ├── 05-rbac.yaml                   SA + Role（pre-sit）+ ClusterRole（cross-ns）
-│   │   └── 10-jenkins.yaml                Jenkins 2.492.3 Deployment + NodePort 30808
+│   │   ├── 10-jenkins.yaml                Jenkins 2.492.3 Deployment + ClusterIP Service
+│   │   └── 20-ingress.yaml                Ingress: jenkins.local → jenkins:8080
 │   ├── monitoring/
 │   │   ├── 00-namespace.yaml              monitoring namespace
 │   │   ├── values-kube-prometheus.yaml    Prometheus + Grafana Helm values

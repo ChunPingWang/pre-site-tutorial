@@ -88,11 +88,15 @@ step "Step 6/9: pre-sit 與 sit namespace 基礎資源"
 kubectl apply -f "${ROOT}/manifests/pre-sit/25-presit-sa.yaml"
 ok "pre-sit RBAC 就緒"
 
-# ── Step 7: ArgoCD Applications（pre-sit + sit）及 ApplicationSet ──────────
-step "Step 7/9: ArgoCD Applications + ApplicationSet"
+# ── Step 7: ArgoCD（insecure mode + Applications + ApplicationSet + Ingress）─
+step "Step 7/9: ArgoCD Applications + ApplicationSet + Ingress"
+kubectl apply -f "${ROOT}/manifests/argocd/00-argocd-params-cm.yaml"
 kubectl apply -f "${ROOT}/manifests/argocd/app-pre-sit.yaml"
 kubectl apply -f "${ROOT}/manifests/argocd/app-sit.yaml"
 kubectl apply -f "${ROOT}/manifests/argocd/appset-sit-users.yaml"
+kubectl apply -f "${ROOT}/manifests/argocd/10-ingress.yaml"
+kubectl rollout restart deployment argocd-server -n argocd > /dev/null
+kubectl rollout status deployment argocd-server -n argocd --timeout=60s > /dev/null
 
 echo "  等待 petclinic-sit sync（最多 180s）..."
 DEADLINE=$(($(date +%s) + 180))
@@ -108,10 +112,11 @@ step "Step 8/9: Jenkins"
 kubectl apply -f "${ROOT}/manifests/jenkins/00-namespace.yaml"
 kubectl apply -f "${ROOT}/manifests/jenkins/05-rbac.yaml"
 kubectl apply -f "${ROOT}/manifests/jenkins/10-jenkins.yaml"
+kubectl apply -f "${ROOT}/manifests/jenkins/20-ingress.yaml"
 echo "  等待 Jenkins 就緒（initContainer 安裝 kubectl + plugins，約 2–3 分鐘）..."
 kubectl wait -n jenkins deployment/jenkins \
   --for=condition=Available --timeout=300s
-ok "Jenkins 就緒"
+ok "Jenkins 就緒（http://jenkins.local:30080）"
 
 # ── Step 9: Observability（Prometheus + Grafana + Loki）─────────────────────
 step "Step 9/9: Observability"
@@ -120,23 +125,24 @@ docker exec presit-control-plane sysctl -w \
   fs.inotify.max_user_instances=512 \
   fs.inotify.max_user_watches=524288 > /dev/null
 bash "${ROOT}/scripts/setup-monitoring.sh"
-ok "Prometheus + Grafana + Loki 就緒"
+kubectl apply -f "${ROOT}/manifests/monitoring/30-ingress.yaml"
+ok "Prometheus + Grafana + Loki 就緒（http://grafana.local:30080）"
 
 # ── 完成：列出所有服務存取資訊 ────────────────────────────────────────────────
-NODE_IP=$(kubectl get node -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
-
 echo ""
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  ✅ v2.3 全棧安裝完成！"
 echo ""
-echo "  服務存取（Node IP: ${NODE_IP}）"
-echo "    SIT PetClinic  http://${NODE_IP}:30080  (Host: sit.local)"
-echo "    Jenkins        http://${NODE_IP}:30808"
-echo "    Grafana        http://${NODE_IP}:30300  (admin / presit-admin)"
-echo "    ArgoCD UI      kubectl -n argocd port-forward svc/argocd-server 8080:443"
+echo "  所有服務統一走 nginx-ingress（port :30080）"
+echo "    SIT PetClinic  http://sit.local:30080/"
+echo "    Jenkins        http://jenkins.local:30080/       無密碼"
+echo "    Grafana        http://grafana.local:30080/       admin / presit-admin"
+echo "    ArgoCD         http://argocd.local:30080/"
 echo ""
-echo "  /etc/hosts（複製後執行）:"
-echo "    echo '127.0.0.1 sit.local' | sudo tee -a /etc/hosts"
+echo "  /etc/hosts（一次加入）:"
+echo "    sudo tee -a /etc/hosts <<'EOF'"
+echo "    127.0.0.1 sit.local jenkins.local grafana.local argocd.local"
+echo "    EOF"
 echo ""
 echo "  下一步："
 echo "    1. 觸發 Jenkins pipeline（Build #1）："

@@ -1,0 +1,12 @@
+# ArgoCD server 改為 HTTP insecure 模式，讓 nginx-ingress 可直接 proxy
+# 不需 ssl-passthrough；搭配 10-ingress.yaml 使用 http://argocd.local:30080
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cmd-params-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cmd-params-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  server.insecure: "true"
