@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: petclinic-pre-sit
+  namespace: argocd
+spec:
+  project: default
+  source:
+    # For the PoC, we point ArgoCD at a local in-cluster Git mirror.
+    # In production, replace with the real Git URL.
+    repoURL: https://github.com/spring-petclinic/spring-petclinic-microservices-config
+    targetRevision: HEAD
+    path: .
+    directory:
+      recurse: false
+      include: '__none__'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: pre-sit
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: false

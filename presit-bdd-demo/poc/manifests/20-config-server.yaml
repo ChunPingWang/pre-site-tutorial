@@ -1,0 +1,38 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: config-server
+  namespace: pre-sit
+spec:
+  ports: [{ port: 8888 }]
+  selector: { app: config-server }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-server
+  namespace: pre-sit
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: config-server }
+  template:
+    metadata:
+      labels: { app: config-server }
+    spec:
+      containers:
+      - name: config-server
+        image: springcommunity/spring-petclinic-config-server:3.2.0
+        ports: [{ containerPort: 8888 }]
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "docker"
+        readinessProbe:
+          httpGet: { path: /actuator/health, port: 8888 }
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 30
+        resources:
+          requests: { cpu: 100m, memory: 384Mi }
+          limits:   { cpu: 1,    memory: 768Mi }

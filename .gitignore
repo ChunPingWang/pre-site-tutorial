@@ -1,0 +1,18 @@
+# Maven build artifacts
+target/
+*.class
+
+# Cucumber reports (per-run; PoC final reports live under poc/reports/)
+presit-bdd-demo/poc/bdd/reports/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Logs / temp
+*.log
+/tmp/
+
+# Local kubeconfig overrides
+kubeconfig.local

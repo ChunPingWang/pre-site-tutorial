@@ -1,0 +1,414 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Pre-SIT BDD 驗證 K8s Job
+# 對應架構圖：Validation Layer → K8s Job: pre-sit-validation
+#
+# 此 Job 在 Kind 集群中執行，依序跑完 Phase 1-4
+# ArgoCD 可透過 Sync Hook 觸發此 Job
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: presit-bdd-features
+  namespace: pre-sit
+  labels:
+    app: presit-validation
+    phase: all
+data:
+  # Feature 檔案以 ConfigMap 掛載
+  # 實務上建議將 features 打包進測試鏡像
+  cucumber-tags: "@pre-sit"
+  report-format: "html,json,junit"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: presit-db-credentials
+  namespace: pre-sit
+type: Opaque
+stringData:
+  DB_HOST: "postgres-service.pre-sit.svc"
+  DB_PORT: "5432"
+  DB_NAME: "petclinic"
+  DB_USER: "postgres"
+  DB_PASSWORD: "postgres"
+
+---
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Phase 1: 數據庫層驗證 Job
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: presit-phase1-database
+  namespace: pre-sit
+  labels:
+    app: presit-validation
+    phase: "1"
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app: presit-validation
+        phase: "1"
+    spec:
+      restartPolicy: Never
+      serviceAccountName: presit-sa
+
+      # 等待 DB 就緒
+      initContainers:
+      - name: wait-for-db
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          echo "[Pre-SIT] 等待 PostgreSQL 就緒..."
+          until nc -z postgres-service 5432; do
+            echo "  等待中..."
+            sleep 2
+          done
+          echo "[Pre-SIT] ✅ PostgreSQL 已就緒"
+
+      containers:
+      - name: bdd-runner
+        image: localhost:5000/presit-bdd-runner:latest
+        command:
+        - sh
+        - -c
+        - |
+          echo "━━━ Phase 1: 數據庫層 BDD 驗證 ━━━"
+          mvn test -P phase-1 \
+            -Dcucumber.filter.tags="@phase-1" \
+            -q
+          EXIT_CODE=$?
+          # 複製報告到共享目錄
+          cp -r reports/ /reports/phase-1/
+          exit $EXIT_CODE
+        envFrom:
+        - secretRef:
+            name: presit-db-credentials
+        env:
+        - name: GATEWAY_URL
+          value: "http://api-gateway.pre-sit.svc:8080"
+        volumeMounts:
+        - name: reports
+          mountPath: /reports
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+
+      volumes:
+      - name: reports
+        emptyDir: {}
+
+---
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Phase 2: 應用層驗證 Job
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: presit-phase2-application
+  namespace: pre-sit
+  labels:
+    app: presit-validation
+    phase: "2"
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app: presit-validation
+        phase: "2"
+    spec:
+      restartPolicy: Never
+      serviceAccountName: presit-sa
+
+      # 等待 Phase 1 完成
+      initContainers:
+      - name: wait-for-phase1
+        image: bitnami/kubectl:1.28
+        command:
+        - sh
+        - -c
+        - |
+          echo "[Pre-SIT] 等待 Phase 1 Job 完成..."
+          kubectl wait --for=condition=complete \
+            job/presit-phase1-database \
+            -n pre-sit --timeout=300s
+          echo "[Pre-SIT] ✅ Phase 1 已完成"
+
+      # 等待所有應用 Pod 就緒
+      - name: wait-for-apps
+        image: bitnami/kubectl:1.28
+        command:
+        - sh
+        - -c
+        - |
+          echo "[Pre-SIT] 等待應用 Pod 就緒..."
+          for svc in customers-service vets-service visits-service api-gateway; do
+            kubectl wait --for=condition=Ready pod \
+              -l app=$svc -n pre-sit --timeout=180s
+            echo "  ✅ $svc 已就緒"
+          done
+
+      containers:
+      - name: bdd-runner
+        image: localhost:5000/presit-bdd-runner:latest
+        command:
+        - sh
+        - -c
+        - |
+          echo "━━━ Phase 2: 應用層 BDD 驗證 ━━━"
+          mvn test -P phase-2 \
+            -Dcucumber.filter.tags="@phase-2" \
+            -q
+          EXIT_CODE=$?
+          cp -r reports/ /reports/phase-2/
+          exit $EXIT_CODE
+        envFrom:
+        - secretRef:
+            name: presit-db-credentials
+        env:
+        - name: GATEWAY_URL
+          value: "http://api-gateway.pre-sit.svc:8080"
+        volumeMounts:
+        - name: reports
+          mountPath: /reports
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+
+      volumes:
+      - name: reports
+        emptyDir: {}
+
+---
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Phase 3: 功能與集成驗證 Job
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: presit-phase3-integration
+  namespace: pre-sit
+  labels:
+    app: presit-validation
+    phase: "3"
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 600
+  template:
+    metadata:
+      labels:
+        app: presit-validation
+        phase: "3"
+    spec:
+      restartPolicy: Never
+      serviceAccountName: presit-sa
+
+      initContainers:
+      - name: wait-for-phase2
+        image: bitnami/kubectl:1.28
+        command:
+        - sh
+        - -c
+        - |
+          echo "[Pre-SIT] 等待 Phase 2 Job 完成..."
+          kubectl wait --for=condition=complete \
+            job/presit-phase2-application \
+            -n pre-sit --timeout=300s
+          echo "[Pre-SIT] ✅ Phase 2 已完成"
+
+      containers:
+      - name: bdd-runner
+        image: localhost:5000/presit-bdd-runner:latest
+        command:
+        - sh
+        - -c
+        - |
+          echo "━━━ Phase 3: 功能與集成 BDD 驗證 ━━━"
+          mvn test -P phase-3 \
+            -Dcucumber.filter.tags="@phase-3" \
+            -q
+          EXIT_CODE=$?
+          cp -r reports/ /reports/phase-3/
+          exit $EXIT_CODE
+        envFrom:
+        - secretRef:
+            name: presit-db-credentials
+        env:
+        - name: GATEWAY_URL
+          value: "http://api-gateway.pre-sit.svc:8080"
+        volumeMounts:
+        - name: reports
+          mountPath: /reports
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+
+      volumes:
+      - name: reports
+        emptyDir: {}
+
+---
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Phase 4: 端到端驗證 + Go/No-Go 決策 Job
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: presit-phase4-e2e-decision
+  namespace: pre-sit
+  labels:
+    app: presit-validation
+    phase: "4"
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels:
+        app: presit-validation
+        phase: "4"
+    spec:
+      restartPolicy: Never
+      serviceAccountName: presit-sa
+
+      initContainers:
+      - name: wait-for-phase3
+        image: bitnami/kubectl:1.28
+        command:
+        - sh
+        - -c
+        - |
+          echo "[Pre-SIT] 等待 Phase 3 Job 完成..."
+          kubectl wait --for=condition=complete \
+            job/presit-phase3-integration \
+            -n pre-sit --timeout=600s
+          echo "[Pre-SIT] ✅ Phase 3 已完成"
+
+      containers:
+      - name: bdd-runner
+        image: localhost:5000/presit-bdd-runner:latest
+        command:
+        - sh
+        - -c
+        - |
+          echo "━━━ Phase 4: 端到端 + Go/No-Go 決策 ━━━"
+          
+          # 執行 E2E 測試
+          mvn test -P phase-4 \
+            -Dcucumber.filter.tags="@phase-4" \
+            -q
+          EXIT_CODE=$?
+          
+          # 彙整所有 Phase 報告
+          mkdir -p /reports/final
+          cp -r reports/ /reports/phase-4/
+          
+          # 產出最終決策
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo ""
+            echo "┌────────────────────────────────────┐"
+            echo "│  ✅  GO — 可部署至 SIT 環境         │"
+            echo "└────────────────────────────────────┘"
+          else
+            echo ""
+            echo "┌────────────────────────────────────┐"
+            echo "│  ❌  NO-GO — 需修復後重新驗證       │"
+            echo "└────────────────────────────────────┘"
+          fi
+          
+          exit $EXIT_CODE
+        envFrom:
+        - secretRef:
+            name: presit-db-credentials
+        env:
+        - name: GATEWAY_URL
+          value: "http://api-gateway.pre-sit.svc:8080"
+        volumeMounts:
+        - name: reports
+          mountPath: /reports
+        resources:
+          requests:
+            cpu: "1"
+            memory: "1Gi"
+          limits:
+            cpu: "2"
+            memory: "2Gi"
+
+      volumes:
+      - name: reports
+        emptyDir: {}
+
+---
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# RBAC: 讓驗證 Job 能查詢 Pod/Job 狀態
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: presit-sa
+  namespace: pre-sit
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: presit-role
+  namespace: pre-sit
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: presit-rolebinding
+  namespace: pre-sit
+subjects:
+- kind: ServiceAccount
+  name: presit-sa
+  namespace: pre-sit
+roleRef:
+  kind: Role
+  name: presit-role
+  apiGroup: rbac.authorization.k8s.io

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.presit</groupId>
+    <artifactId>presit-bdd-validation</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <name>Pre-SIT BDD Validation Suite</name>
+    <description>
+        Gherkin → Cucumber → JUnit 5 自動化驗證框架
+        對應 Pre-SIT 工作計劃：Phase 1-4 全階段驗證
+    </description>
+
+    <properties>
+        <java.version>17</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- 核心依賴版本 -->
+        <cucumber.version>7.15.0</cucumber.version>
+        <junit-platform.version>1.10.1</junit-platform.version>
+        <assertj.version>3.25.1</assertj.version>
+        <jackson.version>2.16.1</jackson.version>
+        <postgresql.version>42.7.1</postgresql.version>
+    </properties>
+
+    <dependencies>
+        <!-- ━━━ Cucumber BDD ━━━ -->
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-java</artifactId>
+            <version>${cucumber.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-junit-platform-engine</artifactId>
+            <version>${cucumber.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- ━━━ JUnit 5 Platform ━━━ -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-suite</artifactId>
+            <version>${junit-platform.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- ━━━ Assertions ━━━ -->
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>${assertj.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- ━━━ DB 連線 (Phase 1) ━━━ -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${postgresql.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- ━━━ JSON 解析 ━━━ -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <!-- ━━━ 報告美化 ━━━ -->
+        <dependency>
+            <groupId>me.jvt.cucumber</groupId>
+            <artifactId>cucumber-reporting-plugin</artifactId>
+            <version>7.11.0</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <testSourceDirectory>step-definitions</testSourceDirectory>
+        <testResources>
+            <testResource>
+                <directory>features</directory>
+            </testResource>
+        </testResources>
+        <plugins>
+            <!-- Surefire：執行 Cucumber 測試 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.3</version>
+                <configuration>
+                    <includes>
+                        <include>**/PreSitTestRunner.java</include>
+                    </includes>
+                    <systemPropertyVariables>
+                        <cucumber.filter.tags>${cucumber.tags}</cucumber.filter.tags>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+
+            <!-- 打包為可執行 JAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>com.presit.runners.PreSitTestRunner</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <!-- ━━━ Profile：依 Phase 篩選執行 ━━━ -->
+    <profiles>
+        <profile>
+            <id>phase-1</id>
+            <properties>
+                <cucumber.tags>@phase-1</cucumber.tags>
+            </properties>
+        </profile>
+        <profile>
+            <id>phase-2</id>
+            <properties>
+                <cucumber.tags>@phase-2</cucumber.tags>
+            </properties>
+        </profile>
+        <profile>
+            <id>phase-3</id>
+            <properties>
+                <cucumber.tags>@phase-3</cucumber.tags>
+            </properties>
+        </profile>
+        <profile>
+            <id>phase-4</id>
+            <properties>
+                <cucumber.tags>@phase-4</cucumber.tags>
+            </properties>
+        </profile>
+        <profile>
+            <id>smoke</id>
+            <properties>
+                <cucumber.tags>@smoke</cucumber.tags>
+            </properties>
+        </profile>
+        <profile>
+            <id>full</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <cucumber.tags>@pre-sit</cucumber.tags>
+            </properties>
+        </profile>
+    </profiles>
+</project>
