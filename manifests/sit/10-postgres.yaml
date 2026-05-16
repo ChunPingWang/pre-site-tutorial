@@ -1,0 +1,43 @@
+---
+apiVersion: v1
+kind: Service
+metadata: { name: postgres, namespace: sit, labels: { app: postgres } }
+spec:
+  ports: [{ port: 5432, name: postgres }]
+  selector: { app: postgres }
+---
+# v2.2 §3 決策 #14: SIT Postgres 用 PVC (persistent，不像 Pre-SIT 用 emptyDir)
+# 資料永不 reset (§3 決策 #2 SIT 資料治理：使用者自行清理自己產生的測試資料)
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: postgres, namespace: sit, labels: { app: postgres } }
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector: { matchLabels: { app: postgres } }
+  template:
+    metadata: { labels: { app: postgres } }
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        ports: [{ containerPort: 5432, name: postgres }]
+        env:
+        - { name: POSTGRES_DB, valueFrom: { configMapKeyRef: { name: petclinic-db-config, key: POSTGRES_DB } } }
+        - { name: POSTGRES_USER, valueFrom: { secretKeyRef: { name: petclinic-db-credentials, key: POSTGRES_USER } } }
+        - { name: POSTGRES_PASSWORD, valueFrom: { secretKeyRef: { name: petclinic-db-credentials, key: POSTGRES_PASSWORD } } }
+        - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
+        volumeMounts:
+        - { name: data, mountPath: /var/lib/postgresql/data }
+        readinessProbe:
+          exec: { command: ["pg_isready", "-U", "petclinic", "-d", "petclinic"] }
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests: { cpu: 100m, memory: 256Mi }
+          limits:   { cpu: 500m, memory: 512Mi }
+  volumeClaimTemplates:
+  - metadata: { name: data }
+    spec:
+      accessModes: [ReadWriteOnce]
+      resources: { requests: { storage: 1Gi } }

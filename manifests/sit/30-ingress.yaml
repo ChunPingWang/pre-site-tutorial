@@ -1,0 +1,27 @@
+---
+# v2.2 §3 決策 #11 + #19: nginx-ingress 暴露 SIT、含完整 PetClinic SPA UI
+#
+# 本機使用方式:
+#   1) 編輯 /etc/hosts 加: 127.0.0.1 sit.local
+#   2) 瀏覽器開 http://sit.local:30080/ → PetClinic UI
+#   3) 直接 curl: curl -H 'Host: sit.local' http://localhost:30080/api/customer/owners
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: petclinic
+  namespace: sit
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: sit.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: api-gateway
+            port:
+              number: 8080
