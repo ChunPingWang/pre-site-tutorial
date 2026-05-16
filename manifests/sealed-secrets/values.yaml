@@ -1,0 +1,12 @@
+# Sealed Secrets controller — Kind PoC 設定
+# helm install sealed-secrets sealed-secrets/sealed-secrets \
+#   --namespace kube-system -f this-file
+
+fullnameOverride: sealed-secrets-controller
+
+resources:
+  requests: { cpu: 50m,  memory: 64Mi }
+  limits:   { cpu: 200m, memory: 128Mi }
+
+# 公鑰 rotation（預設 30 天輪換一次）
+keyrenewperiod: "720h"

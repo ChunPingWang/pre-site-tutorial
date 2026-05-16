@@ -13,13 +13,4 @@ data:
   VETS_SERVICE_URI:      "http://vets-service.sit.svc:8083"
   VISITS_SERVICE_URI:    "http://visits-service.sit.svc:8082"
   JAVA_TOOL_OPTIONS: "-Xmx256m -XX:MaxMetaspaceSize=160m -XX:ReservedCodeCacheSize=48m"
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: petclinic-db-credentials
-  namespace: sit
-type: Opaque
-stringData:
-  POSTGRES_USER: "petclinic"
-  POSTGRES_PASSWORD: "petclinic"
+# credentials 已移至 06-sealed-db-credentials.yaml（SealedSecret）

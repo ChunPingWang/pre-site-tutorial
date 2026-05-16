@@ -15,15 +15,4 @@ data:
   VISITS_SERVICE_URI:    "http://visits-service.pre-sit.svc:8082"
   # JVM tuning（v2.1 PoC 已驗證必要）
   JAVA_TOOL_OPTIONS: "-Xmx256m -XX:MaxMetaspaceSize=160m -XX:ReservedCodeCacheSize=48m"
----
-# Database credentials Secret
-# v2.2 §3 決策 #18: PoC 用明文 K8s Secret；生產應換 sealed-secrets
-apiVersion: v1
-kind: Secret
-metadata:
-  name: petclinic-db-credentials
-  namespace: pre-sit
-type: Opaque
-stringData:
-  POSTGRES_USER: "petclinic"
-  POSTGRES_PASSWORD: "petclinic"
+# credentials 已移至 06-sealed-db-credentials.yaml（SealedSecret）
