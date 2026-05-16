@@ -76,6 +76,10 @@ rules:
 - apiGroups: ["argoproj.io"]
   resources: ["workflows", "workflowtemplates", "workflowartifactgctasks"]
   verbs: ["get", "list", "watch"]
+# emissary executor 需要：回報 step 執行結果
+- apiGroups: ["argoproj.io"]
+  resources: ["workflowtaskresults"]
+  verbs: ["create", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

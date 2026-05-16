@@ -47,7 +47,7 @@ spec:
   # ── Step 1: Preflight ─────────────────────────────────────────────────────────
   - name: preflight
     script:
-      image: bitnami/kubectl:1.31
+      image: bitnami/kubectl:latest
       command: [bash]
       source: |
         set -e
@@ -64,7 +64,7 @@ spec:
   # ── Step 2: Reset Pre-SIT ────────────────────────────────────────────────────
   - name: reset-presit
     script:
-      image: bitnami/kubectl:1.31
+      image: bitnami/kubectl:latest
       command: [bash]
       source: |
         NS="{{workflow.parameters.ns}}"
@@ -92,7 +92,7 @@ spec:
           depth: 1
           insecureIgnoreHostKey: true
     script:
-      image: bitnami/kubectl:1.31
+      image: bitnami/kubectl:latest
       command: [bash]
       source: |
         echo "=== 套用 BDD Jobs ==="
@@ -102,7 +102,7 @@ spec:
   # ── Step 4: Wait Phase 1-4 ───────────────────────────────────────────────────
   - name: wait-phase4
     script:
-      image: bitnami/kubectl:1.31
+      image: bitnami/kubectl:latest
       command: [bash]
       source: |
         NS="{{workflow.parameters.ns}}"
@@ -134,7 +134,7 @@ spec:
         valueFrom:
           path: /tmp/decision.txt
     script:
-      image: bitnami/kubectl:1.31
+      image: bitnami/kubectl:latest
       command: [bash]
       source: |
         NS="{{workflow.parameters.ns}}"
@@ -161,7 +161,7 @@ spec:
       parameters:
       - name: decision
     script:
-      image: bitnami/kubectl:1.31
+      image: bitnami/kubectl:latest
       command: [bash]
       source: |
         SIT_NS="{{workflow.parameters.sit-ns}}"
