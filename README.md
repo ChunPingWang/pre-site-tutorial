@@ -28,6 +28,7 @@
    - [7.10 v2.3 Postgres PVC Snapshot / Restore](#710-v23-postgres-pvc-snapshot--restore)
    - [7.11 v2.3 Argo Workflows：取代 Jenkins](#711-v23-argo-workflows取代-jenkins)
    - [7.12 v2.3 Gherkin Editor：瀏覽器管理測試案例](#712-v23-gherkin-editor瀏覽器管理測試案例)
+   - [7.13 部署到 GCP（GKE + Artifact Registry）](#713-部署到-gcpgke--artifact-registry)
 8. [目錄結構說明](#8-目錄結構說明)
 9. [常見問題（FAQ）](#9-常見問題faq)
 10. [延伸學習路徑](#10-延伸學習路徑)
@@ -1614,6 +1615,129 @@ echo "127.0.0.1 presit-editor.local" | sudo tee -a /etc/hosts
 - `presit-editor/static/` — 前端 HTML / JS / CSS
 - `manifests/presit-editor/` — K8s YAML（RBAC、Deployment、Service、Ingress）
 - `scripts/setup-presit-editor.sh` — 一鍵安裝腳本
+
+---
+
+### 7.13 部署到 GCP（GKE + Artifact Registry）
+
+> 本節適用於 `gcp-deployment` 分支。在雲端重現 §7.9 的完整 v2.3 堆疊。
+
+#### 為什麼要上 GCP？
+
+| 需求 | 本機 Kind | GCP GKE |
+|------|-----------|---------|
+| 讓外部人員存取 | ❌ 需 port-forward | ✅ 公開 URL（nip.io） |
+| 長時間運行 | ❌ 關電腦即停 | ✅ 24×7 |
+| 多人協作（同一叢集） | ❌ 單機 | ✅ 雲端共用 |
+| 費用 | 0（本機運算） | ~$63/月（Spot 節點） |
+
+#### 架構差異
+
+```
+本機 Kind                          GCP GKE
+─────────────────                 ─────────────────────────────
+localhost:5000 registry     →     asia-east1-docker.pkg.dev/PROJECT/presit/
+*.local（/etc/hosts）        →     *.EXTERNAL_IP.nip.io（免設定 DNS）
+NodePort :30080              →     LoadBalancer port 80（公開 IP）
+Kind single-node             →     e2-standard-4 × 2 Spot 節點
+```
+
+#### 先決條件
+
+```bash
+# 安裝 gcloud CLI
+curl https://sdk.cloud.google.com | bash
+gcloud auth login
+gcloud auth application-default login
+gcloud config set project YOUR_PROJECT_ID
+
+# 確認其他工具已安裝
+kubectl helm docker envsubst
+```
+
+#### 一鍵安裝
+
+```bash
+# 切換到 GCP 分支
+git checkout gcp-deployment
+
+# 完整安裝（build image + 建立 GKE cluster）
+export GITHUB_TOKEN=ghp_xxxxxxxxxxxx   # presit-editor git push 用
+bash scripts/setup-gcp.sh --project YOUR_PROJECT_ID
+
+# 跳過 image build（GAR 已有 image）
+bash scripts/setup-gcp.sh --project YOUR_PROJECT_ID --skip-build
+
+# 加裝 Prometheus + Grafana + Loki（額外 ~$5/月）
+bash scripts/setup-gcp.sh --project YOUR_PROJECT_ID --with-monitoring
+```
+
+腳本完成後輸出所有服務 URL，例如：
+
+```
+  SIT PetClinic    http://sit.34.80.12.34.nip.io/
+  Argo Workflows   http://argo.34.80.12.34.nip.io/
+  ArgoCD           http://argocd.34.80.12.34.nip.io/
+  Pre-SIT Editor   http://presit-editor.34.80.12.34.nip.io/
+```
+
+#### 安裝步驟說明
+
+| 步驟 | 說明 |
+|------|------|
+| Step 1 | 啟用 GCP API、建立 Artifact Registry |
+| Step 2 | 建立 GKE Standard Zonal 叢集 + Spot 節點池 |
+| Step 3 | Maven build PetClinic → push 所有 image 到 GAR |
+| Step 4 | 安裝 nginx-ingress（LoadBalancer），取得外部 IP → nip.io domain |
+| Step 5 | 安裝 ArgoCD |
+| Step 6 | 安裝 Sealed Secrets；直接建立 DB Secret（新叢集憑證不同） |
+| Step 7 | 套用 pre-sit + sit 基礎資源（image 替換為 GAR URL） |
+| Step 8 | 安裝 Argo Workflows |
+| Step 9 | 部署 presit-editor |
+| Optional | --with-monitoring：安裝 Prometheus + Grafana + Loki |
+
+#### Sealed Secrets 說明
+
+Sealed Secrets 使用叢集特定的加密金鑰。在 GCP 新叢集上，原本封存在 git 的 SealedSecret 無法解密。腳本採用教學用預設值（petclinic/petclinic）直接建立 Secret。
+
+若要在正式環境重新封存：
+
+```bash
+# 取得新叢集公鑰
+kubeseal --fetch-cert \
+  --controller-name=sealed-secrets-controller \
+  --controller-namespace=kube-system > gcp-pub-cert.pem
+
+# 用新公鑰重新封存
+kubectl create secret generic petclinic-db-credentials \
+  --from-literal=POSTGRES_USER=petclinic \
+  --from-literal=POSTGRES_PASSWORD=YOUR_STRONG_PASSWORD \
+  -n pre-sit --dry-run=client -o yaml \
+  | kubeseal --cert gcp-pub-cert.pem --format yaml \
+  > manifests/pre-sit/06-sealed-db-credentials.yaml
+```
+
+#### 費用估算（asia-east1，月費）
+
+| 項目 | 規格 | 月費 |
+|------|------|------|
+| GKE 管理費 | Standard Zonal（首個叢集免費） | $0 |
+| e2-standard-4 × 2 | Spot 節點（可中斷） | ~$40 |
+| Network LoadBalancer | 1 個外部 IP | ~$18 |
+| Artifact Registry | 50 GB | <$5 |
+| 合計 | | **~$63/月** |
+
+> Spot 節點可能被 GCP 回收（發生率低，有警告時間）。如需穩定性，改用一般節點（費用 ~$150/月）。
+
+#### 清除資源（停止計費）
+
+```bash
+gcloud container clusters delete presit \
+  --zone=asia-east1-b --project=YOUR_PROJECT_ID --quiet
+
+gcloud artifacts repositories delete presit \
+  --location=asia-east1 --project=YOUR_PROJECT_ID --quiet
+```
 
 ---
 
