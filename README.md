@@ -1428,8 +1428,11 @@ api-gateway:         localhost:5000/petclinic-api-gateway:sit-approved
 
 提供 Web UI，讓測試人員不需命令列即可：
 - **瀏覽 / 新增 / 編輯 / 刪除** `.feature` 檔案，修改後自動 commit + push 回 GitHub
-- **紅/綠燈** 顯示各 Scenario 的最新測試結果（讀取 cucumber-report.json）
-- **一鍵觸發** Argo Workflows Pre-SIT Pipeline
+- **匯出 / 匯入** `.feature` 檔案（本機下載 / 上傳並自動 push）
+- **紅/綠燈** 顯示各 Scenario 與 Phase 的最新測試結果（讀取 cucumber-report.json）
+- **個別執行** 各 Phase 的 BDD 測試，不需觸發完整 Pipeline
+- **批次執行** Argo Workflows Pre-SIT 全流程 Pipeline
+- **產生綜合報告** 含各 Scenario 結果與 DB 資料表查詢（HTML 可下載）
 
 #### 前提
 
@@ -1455,29 +1458,35 @@ echo "127.0.0.1 presit-editor.local" | sudo tee -a /etc/hosts
 #### 介面說明
 
 ```
-┌────────────────────────────────────────────────────────────┐
-│  🧪 Pre-SIT Gherkin Editor           [▶ Run Pipeline]      │
-├──────────────────┬─────────────────────────────────────────┤
-│ Feature 瀏覽     │  [編輯] [測試結果]  tab                  │
-│                  │                                         │
-│ 📁 database/     │  編輯模式：                              │
-│   🟢 01_db...    │    Gherkin 原始文字（可直接修改）         │
-│   🔴 02_app...   │    [💾 儲存並推送]  [🗑 刪除]            │
-│                  │                                         │
-│ 📁 application/  │  測試結果模式：                          │
-│   🟢 ...         │    🟢 Scenario 名稱  (12 ms)            │
-│ ─────────────── │    🔴 Scenario 名稱  (FAILED)            │
-│ [+ 新增 Feature] │    決策：GO ✅ / NOGO ❌                  │
-└──────────────────┴─────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│  🧪 Pre-SIT Gherkin Editor    [📊 產生報告]  [▶ Run Pipeline]    │
+├───────────────────────┬──────────────────────────────────────────┤
+│ Feature 檔案           │  [編輯] [測試結果]  tab                   │
+│ [📥 匯入]  [+ 新增]    │                                          │
+│                       │  編輯模式：                               │
+│ ⚫ database/    [▶]   │    Gherkin 原始文字（可直接修改）           │
+│   🟢 01_database...   │    [⬇ 匯出]  [🗑 刪除]  [💾 儲存並推送]   │
+│   🔴 02_api...        │                                          │
+│                       │  測試結果模式：                           │
+│ 🟢 application/ [▶]   │    🟢 Scenario 名稱  (12 ms)            │
+│   🟢 01_app...        │    🔴 Scenario 名稱  (FAILED)           │
+│                       │    決策：GO ✅ / NOGO ❌                  │
+└───────────────────────┴──────────────────────────────────────────┘
+  Phase 旁燈號：⚫未執行  🟢全部通過  🔴有失敗  🔵執行中
+  Feature 燈號：⚫未執行  🟢通過      🔴失敗
 ```
 
 | 操作 | 說明 |
 |------|------|
 | 點選左側 Feature | 在右側顯示 Gherkin 原文（編輯 tab）與紅/綠燈結果（結果 tab） |
-| 修改後點「儲存並推送」 | 自動 `git commit` + `git push` 回 GitHub |
-| 點「+ 新增 Feature」 | 輸入相對路徑（如 `database/05_new.feature`）建立新檔 |
+| 修改後點「💾 儲存並推送」 | 自動 `git commit` + `git push` 回 GitHub |
+| 點「⬇ 匯出」 | 將當前 Feature 下載為 `.feature` 檔案至本機（不影響 git） |
+| 點「📥 匯入」 | 從本機選擇 `.feature` 檔案，確認儲存路徑後 commit + push；路徑已存在則覆蓋 |
+| 點「+ 新增 Feature」 | 輸入相對路徑（如 `database/05_new.feature`）建立新檔並推送 |
 | 點「🗑 刪除」 | 從 Git 刪除並推送 |
-| 點「▶ Run Pipeline」 | 觸發 Argo Workflows `presit-pipeline`，Pipeline 狀態即時顯示在右上角 |
+| 點 Phase 旁的「▶」 | **單獨執行**該 Phase 的 BDD Job（不含其他 Phase，不需跑全流程） |
+| 點「▶ Run Pipeline」 | **批次執行** Argo Workflows `presit-pipeline` 全流程 |
+| 點「📊 產生報告」 | 產生 HTML 測試報告（含各 Scenario 結果與 DB 資料表查詢），開啟於新分頁 |
 
 #### 技術說明
 
@@ -1492,7 +1501,7 @@ echo "127.0.0.1 presit-editor.local" | sudo tee -a /etc/hosts
 
 #### 相關檔案
 
-- `presit-editor/app.py` — FastAPI 主程式（8 個 API endpoint）
+- `presit-editor/app.py` — FastAPI 主程式（14 個 API endpoint）
 - `presit-editor/static/` — 前端 HTML / JS / CSS
 - `manifests/presit-editor/` — K8s YAML（RBAC、Deployment、Service、Ingress）
 - `scripts/setup-presit-editor.sh` — 一鍵安裝腳本
