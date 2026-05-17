@@ -1433,6 +1433,7 @@ api-gateway:         localhost:5000/petclinic-api-gateway:sit-approved
 - **個別執行** 各 Phase 的 BDD 測試，不需觸發完整 Pipeline
 - **批次執行** Argo Workflows Pre-SIT 全流程 Pipeline
 - **產生綜合報告** 含各 Scenario 結果與 DB 資料表查詢（HTML 可下載）
+- **清除重置** 一鍵刪除測試 Jobs、清除 cucumber 報告，並重建 Postgres 資料庫（含 DDL/DML 測試資料）與 PetClinic 服務
 
 #### 前提
 
@@ -1458,20 +1459,20 @@ echo "127.0.0.1 presit-editor.local" | sudo tee -a /etc/hosts
 #### 介面說明
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│  🧪 Pre-SIT Gherkin Editor    [📊 產生報告]  [▶ Run Pipeline]    │
-├───────────────────────┬──────────────────────────────────────────┤
+┌──────────────────────────────────────────────────────────────────────────┐
+│  🧪 Pre-SIT Gherkin Editor  [🔄 清除重置] [📊 產生報告] [▶ Run Pipeline] │
+├───────────────────────┬──────────────────────────────────────────────────┤
 │ Feature 檔案           │  [編輯] [測試結果]  tab                   │
 │ [📥 匯入]  [+ 新增]    │                                          │
 │                       │  編輯模式：                               │
-│ ⚫ database/ [▶ 執行] │    Gherkin 原始文字（可直接修改）           │
-│   🟢 01_database...   │    [⬇ 匯出]  [🗑 刪除]  [💾 儲存並推送]   │
-│   🔴 02_api...        │                                          │
-│                       │  測試結果模式：                           │
-│ 🟢 application/[▶ 執行]│   🟢 Scenario 名稱  (12 ms)            │
-│   🟢 01_app...        │    🔴 Scenario 名稱  (FAILED)           │
-│                       │    決策：GO ✅ / NOGO ❌                  │
-└───────────────────────┴──────────────────────────────────────────┘
+│ ⚫ database/ [▶ 執行] │    Gherkin 原始文字（可直接修改）               │
+│   🟢 01_database...   │    [⬇ 匯出]  [🗑 刪除]  [💾 儲存並推送]       │
+│   🔴 02_api...        │                                              │
+│                       │  測試結果模式：                               │
+│ 🟢 application/[▶ 執行]│   🟢 Scenario 名稱  (12 ms)                │
+│   🟢 01_app...        │    🔴 Scenario 名稱  (FAILED)               │
+│                       │    決策：GO ✅ / NOGO ❌                      │
+└───────────────────────┴──────────────────────────────────────────────┘
   Phase 旁燈號：⚫未執行  🟢全部通過  🔴有失敗  🔵執行中（脈動）
   Feature 燈號：⚫未執行  🟢通過      🔴失敗
 ```
@@ -1487,6 +1488,7 @@ echo "127.0.0.1 presit-editor.local" | sudo tee -a /etc/hosts
 | 點 Phase 旁的「▶ 執行」 | **單獨執行**該 Phase 的 BDD Job（不含其他 Phase，不需跑全流程） |
 | 點「▶ Run Pipeline」 | **批次執行** Argo Workflows `presit-pipeline` 全流程 |
 | 點「📊 產生報告」 | 產生 HTML 測試報告（含各 Scenario 結果與 DB 資料表查詢），開啟於新分頁 |
+| 點「🔄 清除重置」 | 刪除全部 BDD Jobs、清除 cucumber 報告，並重啟 Postgres（emptyDir 清空，Flyway 重建 DDL/DML 測試資料）與 PetClinic 服務；重置期間三個執行按鈕全部 disabled |
 
 #### 注意事項
 
@@ -1501,6 +1503,19 @@ echo "127.0.0.1 presit-editor.local" | sudo tee -a /etc/hosts
 | 不符合以上任一條件 | `my_test.feature`（放在根層） | 歸入「其他」群組，**無**「▶ 執行」按鈕 |
 
 匯入時請在路徑欄加入正確子目錄前綴（`database/`、`application/`、`integration/`、`e2e/`），即可自動顯示對應 Phase 的執行按鈕。
+
+**清除重置後請等待約 30 秒再執行測試**
+
+重置完成（按鈕顯示「✅ 重置完成」）時，Postgres 雖已就緒，但 PetClinic 四個服務（`customers-service`、`vets-service`、`visits-service`、`api-gateway`）仍在完成 rollout restart。若立即點「▶ 執行」，BDD initContainer 的 `wait-for-db` 會通過，但應用層 API 尚未就緒，導致 Phase 2–4 測試失敗。建議稍候 30 秒再觸發。
+
+**清除重置的執行機制**
+
+清除重置透過 K8s Job（`presit-env-reset`）在叢集內執行，不依賴使用者本機環境：
+
+1. 掛載 `presit-reports` PVC → 刪除 `/reports/phase-*` 與 `presit-decision.json`（燈號立即歸灰）
+2. `kubectl delete jobs -l app=presit-validation` → 刪除舊 BDD Jobs
+3. `kubectl delete pod postgres-0` → StatefulSet 自動重建，emptyDir 清空，Flyway 重新套用 DDL/DML
+4. `kubectl rollout restart deployment` → 重啟四個 PetClinic 服務，確保連線到重置後的 DB
 
 **點「▶ Run Pipeline」沒有反應**
 
@@ -1519,7 +1534,7 @@ echo "127.0.0.1 presit-editor.local" | sudo tee -a /etc/hosts
 
 #### 相關檔案
 
-- `presit-editor/app.py` — FastAPI 主程式（14 個 API endpoint）
+- `presit-editor/app.py` — FastAPI 主程式（16 個 API endpoint）
 - `presit-editor/static/` — 前端 HTML / JS / CSS
 - `manifests/presit-editor/` — K8s YAML（RBAC、Deployment、Service、Ingress）
 - `scripts/setup-presit-editor.sh` — 一鍵安裝腳本
