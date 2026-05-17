@@ -77,10 +77,10 @@ function renderTree() {
     const phase = guessPhaseFromFiles(files);
     const isRunning = phase && !!state.phasePollers[phase];
     const phaseDot = isRunning ? 'running' : (phase ? getPhaseStatus(phase) : '');
-    const btnIcon = isRunning ? '⏳' : '▶';
+    const btnIcon = isRunning ? '⏳ 執行中' : '▶ 執行';
     const btnDisabled = isRunning ? 'disabled' : '';
     const phaseBtn = phase
-      ? `<button class="btn-run-phase" data-phase="${phase}" ${btnDisabled} title="單獨執行 ${group}">${btnIcon}</button>`
+      ? `<button class="btn-run-phase" data-phase="${phase}" ${btnDisabled}>${btnIcon}</button>`
       : '';
     html += `<div class="phase-group">
       <div class="phase-label">
@@ -169,8 +169,13 @@ async function selectFeature(path) {
 }
 
 function guessPhase(path) {
-  const m = path.match(/0*([1-4])_/);
-  return m ? parseInt(m[1]) : null;
+  // file prefix: 01_xxx, 02_xxx (most common pattern in this project)
+  let m = path.match(/(?:^|\/)0*([1-4])_/);
+  if (m) return parseInt(m[1]);
+  // directory name: phase-1/, phase_1/, phase1/
+  m = path.match(/phase[-_]?([1-4])\//i);
+  if (m) return parseInt(m[1]);
+  return null;
 }
 
 // ── Editor ─────────────────────────────────────────────────────────────────
@@ -365,7 +370,6 @@ function startPhasePolling(phaseNum) {
 
 // ── Pipeline ───────────────────────────────────────────────────────────────
 async function runPipeline() {
-  if (!confirm('確定要觸發 Pre-SIT Pipeline 嗎？')) return;
   btnRun.disabled = true;
   btnRun.textContent = '⏳ 觸發中…';
   try {
