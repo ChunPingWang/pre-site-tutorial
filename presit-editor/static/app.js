@@ -72,13 +72,14 @@ function renderTree() {
     (groups[group] = groups[group] || []).push(f);
   }
 
+  const pipelineRunning = !!state.pipelinePoller;
   let html = '';
   for (const [group, files] of Object.entries(groups)) {
     const phase = guessPhaseFromFiles(files);
-    const isRunning = phase && !!state.phasePollers[phase];
-    const phaseDot = isRunning ? 'running' : (phase ? getPhaseStatus(phase) : '');
-    const btnIcon = isRunning ? '⏳ 執行中' : '▶ 執行';
-    const btnDisabled = isRunning ? 'disabled' : '';
+    const phasePolling = phase && !!state.phasePollers[phase];
+    const phaseDot = phasePolling ? 'running' : (phase ? getPhaseStatus(phase) : '');
+    const btnIcon = phasePolling ? '⏳ 執行中' : '▶ 執行';
+    const btnDisabled = (phasePolling || pipelineRunning) ? 'disabled' : '';
     const phaseBtn = phase
       ? `<button class="btn-run-phase" data-phase="${phase}" ${btnDisabled}>${btnIcon}</button>`
       : '';
@@ -337,19 +338,25 @@ function renderResultsForFeature(path) {
 
 // ── Individual Phase Execution ─────────────────────────────────────────────
 async function runPhase(phaseNum) {
+  state.phasePollers[phaseNum] = -1;  // sentinel: gray out immediately before fetch
+  renderTree();
+  syncRunButton();
   try {
     const res = await fetch(`/api/run/phase/${phaseNum}`, { method: 'POST' });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || JSON.stringify(data));
     startPhasePolling(phaseNum);
   } catch (e) {
+    delete state.phasePollers[phaseNum];
+    renderTree();
+    syncRunButton();
     alert(`Phase ${phaseNum} 執行失敗：${e.message}`);
   }
 }
 
 function startPhasePolling(phaseNum) {
-  if (state.phasePollers[phaseNum]) return;
-  renderTree();  // show spinner immediately
+  if (state.phasePollers[phaseNum] > 0) return;  // real interval already running (not sentinel -1)
+  renderTree();
   state.phasePollers[phaseNum] = setInterval(async () => {
     try {
       const res = await fetch(`/api/run/phase/${phaseNum}/status`);
@@ -358,10 +365,10 @@ function startPhasePolling(phaseNum) {
       if (done) {
         clearInterval(state.phasePollers[phaseNum]);
         delete state.phasePollers[phaseNum];
-        // Reload results for this phase only
         delete state.results[phaseNum];
         await loadPhaseResults(phaseNum);
         renderTree();
+        syncRunButton();
         if (state.current && guessPhase(state.current) === phaseNum) {
           renderResultsForFeature(state.current);
         }
@@ -381,8 +388,7 @@ async function runPipeline() {
     startPolling();
   } catch (e) {
     alert('觸發失敗：' + e.message);
-    btnRun.disabled = false;
-    btnRun.textContent = '▶ Run Pipeline';
+    syncRunButton();
   }
 }
 
@@ -405,8 +411,7 @@ function startPolling() {
       if (data.phase !== 'Running' && data.phase !== 'Pending') {
         clearInterval(state.pipelinePoller);
         state.pipelinePoller = null;
-        btnRun.disabled = false;
-        btnRun.textContent = '▶ Run Pipeline';
+        syncRunButton();
         // Refresh results
         await loadDecision();
         for (let p = 1; p <= 4; p++) await loadPhaseResults(p);
@@ -429,6 +434,17 @@ function updateStatusBadge(data) {
     pipelineStatus.classList.add('succeeded');
   } else if (phase === 'Failed' || phase === 'Error') {
     pipelineStatus.classList.add('failed');
+  }
+}
+
+function syncRunButton() {
+  const anyPhaseRunning = Object.keys(state.phasePollers).length > 0;
+  if (anyPhaseRunning || state.pipelinePoller) {
+    btnRun.disabled = true;
+    if (!state.pipelinePoller) btnRun.textContent = '⏳ 執行中…';
+  } else {
+    btnRun.disabled = false;
+    btnRun.textContent = '▶ Run Pipeline';
   }
 }
 
