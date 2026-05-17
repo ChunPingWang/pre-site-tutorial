@@ -130,12 +130,14 @@ function getPhaseStatus(phase) {
 }
 
 function getFeatureDotClass(featurePath) {
+  const tail = featurePath.includes('/') ? featurePath.replace(/^[^/]+\//, '') : featurePath;
   for (const phaseData of Object.values(state.results)) {
     for (const feature of phaseData) {
-      // Match by feature URI containing the path
-      if (feature.uri && feature.uri.includes(featurePath.replace(/^[^/]+\//, ''))) {
-        const allPassed = feature.elements.every(e =>
-          e.steps.every(s => s.result && s.result.status === 'passed')
+      if (feature.uri && feature.uri.includes(tail)) {
+        const scenarios = (feature.elements || []).filter(e => e.type !== 'background');
+        if (!scenarios.length) return '';
+        const allPassed = scenarios.every(e =>
+          (e.steps || []).every(s => s.result && s.result.status === 'passed')
         );
         return allPassed ? 'passed' : 'failed';
       }
