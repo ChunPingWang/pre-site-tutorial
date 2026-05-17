@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: presit-editor
+  namespace: pre-sit
+  labels:
+    app: presit-editor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: presit-editor
+  template:
+    metadata:
+      labels:
+        app: presit-editor
+    spec:
+      serviceAccountName: presit-editor-sa
+      containers:
+      - name: editor
+        image: localhost:5000/presit-editor:v1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        env:
+        - name: GIT_REPO_URL
+          value: "https://github.com/ChunPingWang/pre-site-tutorial.git"
+        envFrom:
+        - secretRef:
+            name: presit-editor-git
+        volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+        - name: reports
+          mountPath: /reports
+          readOnly: true
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+        livenessProbe:
+          httpGet:
+            path: /api/features
+            port: 8000
+          initialDelaySeconds: 20
+          periodSeconds: 30
+      volumes:
+      - name: workspace
+        emptyDir: {}
+      - name: reports
+        persistentVolumeClaim:
+          claimName: presit-reports
+          readOnly: true
