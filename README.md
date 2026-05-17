@@ -137,30 +137,32 @@ graph LR
 
 > 關鍵設計：Phase 3/4 的 initContainer 用 **soft wait**，使前序失敗時後序仍可執行，便於**一次 rerun 收集完整失敗證據**，避免反覆人工觸發。
 
-### 2.3 兩種 DB 的策略性切割
+### 2.3 統一使用 PostgreSQL
 
-PoC 過程發現「Plan-faithful + upstream PetClinic image」根本不相容（upstream 沒有 `postgres` profile）。v2.1 採取明確切割：
+所有 Phase（1–4）共用同一個 PostgreSQL StatefulSet，PetClinic 微服務也連接同一個 DB。這讓 Phase 1 的 Schema 驗證與 Phase 2/3/4 的應用驗證真正端對端一致：Schema 對了、資料也對了，API 才會通過。
 
 ```mermaid
 flowchart TB
-    subgraph "Phase 1 驗證標的"
-        P[(PostgreSQL<br/>plan 預期的 7 表 schema)]
+    PG[(PostgreSQL<br/>StatefulSet<br/>pre-sit namespace)]
+
+    subgraph "Phase 1"
+        P1[DB Schema 驗證<br/>7 張表、欄位、constraint]
+    end
+    subgraph "Phase 2/3/4"
+        APP[PetClinic 微服務<br/>customers / vets / visits / api-gateway]
+        P234[App 健康 / API 功能 / E2E 決策]
+        APP --- P234
     end
 
-    subgraph "Phase 2/3/4 驗證標的"
-        APP[PetClinic 微服務]
-        H[(HSQLDB<br/>upstream 預設 in-memory)]
-        APP --- H
-    end
+    PG --> P1
+    PG --> APP
 
-    P -.Phase 1 只驗證它.-> Phase1[BDD Phase 1]
-    APP -.Phase 2/3/4 驗證它.-> Phase234[BDD Phase 2/3/4]
-
-    style P fill:#9cf
-    style H fill:#fcf
+    style PG fill:#9cf,stroke:#06c
+    style P1 fill:#ddf
+    style P234 fill:#ddf
 ```
 
-兩者**故意不相通** — 這個 trade-off 在 [`Pre-SIT_Work_Plan_v2.1.md §1.3 C1`](Pre-SIT_Work_Plan_v2.1.md) 有完整論述。如需端對端綁定，必須重 build PetClinic（脫離 upstream-as-is 約束）。
+每次 pipeline 啟動時，`reset-presit` 步驟會重啟 `postgres-0` Pod，讓 InitContainer 重建 Schema 並植入種子資料，確保每次測試都從**同一個已知狀態**出發，不受上一次執行的殘留影響。
 
 ### 2.4 Tag-based 場景分層
 
