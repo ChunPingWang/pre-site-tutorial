@@ -24,7 +24,7 @@ spec:
 
   templates:
 
-  # ── 主流程：6 個依序執行的 step ────────────────────────────────────────────────
+  # ── 主流程：5 個依序執行的 step ────────────────────────────────────────────────
   - name: pipeline
     steps:
     - - name: preflight
@@ -37,14 +37,8 @@ spec:
         template: wait-phase4
     - - name: ui-screenshot
         template: ui-screenshot
-    - - name: read-decision
-        template: read-decision
     - - name: check-sit-state
         template: check-sit-state
-        arguments:
-          parameters:
-          - name: decision
-            value: "{{steps.read-decision.outputs.parameters.decision}}"
 
   # ── Step 1: Preflight ─────────────────────────────────────────────────────────
   - name: preflight
@@ -129,11 +123,17 @@ spec:
         done
         STATUS=$(kubectl get job presit-phase4-e2e-decision -n "${NS}" \
           -o jsonpath='{.status.conditions[*].type}')
-        echo "✅ Phase 4 結束，狀態：${STATUS}"
+        echo "Phase 4 結束，狀態：${STATUS}"
         if echo "${STATUS}" | grep -q "Failed"; then
-          echo "❌ Phase 4 失敗"
+          echo "❌ Phase 4 失敗（NOGO）"
+          kubectl logs job/presit-phase4-e2e-decision -n "${NS}" 2>/dev/null | grep '"decision"' | tail -1
           exit 1
         fi
+        echo "─────────────────────────────────────"
+        kubectl logs job/presit-phase4-e2e-decision -n "${NS}" 2>/dev/null | grep '"decision"' | tail -1
+        echo "✅ Pre-SIT 通過（GO）"
+        echo "   建議 promote: docker tag :<sha> → :sit-approved → push"
+        echo "─────────────────────────────────────"
 
   # ── Step 5: UI Screenshot ────────────────────────────────────────────────────
   - name: ui-screenshot
@@ -165,46 +165,13 @@ spec:
           echo "   報告: http://presit-report.local:30080/ui-screenshots/index.html"
         fi
 
-  # ── Step 6: Read Decision ────────────────────────────────────────────────────
-  - name: read-decision
-    outputs:
-      parameters:
-      - name: decision
-        valueFrom:
-          path: /tmp/decision.txt
-    script:
-      image: bitnami/kubectl:latest
-      command: [bash]
-      source: |
-        NS="{{workflow.parameters.ns}}"
-        echo "=== 讀取 Phase 4 決策 ==="
-        LOG=$(kubectl logs job/presit-phase4-e2e-decision -n "${NS}" 2>/dev/null)
-        JSON_LINE=$(echo "${LOG}" | grep '"decision"' | tail -1)
-        echo "─────────────────────────────────────"
-        echo "  Pre-SIT 決策: ${JSON_LINE}"
-        echo "─────────────────────────────────────"
-        if echo "${JSON_LINE}" | grep -q '"GO'; then
-          echo "GO" > /tmp/decision.txt
-          echo "✅ Pre-SIT 通過。"
-          echo "   建議 promote: docker tag :<sha> → :sit-approved → push"
-          echo "   Argo Image Updater 偵測後 ArgoCD 將自動更新 SIT"
-        else
-          echo "NOGO" > /tmp/decision.txt
-          echo "❌ Pre-SIT 未通過，不建議 promote"
-          exit 1
-        fi
-
   # ── Step 6: Check SIT State ──────────────────────────────────────────────────
   - name: check-sit-state
-    inputs:
-      parameters:
-      - name: decision
     script:
       image: bitnami/kubectl:latest
       command: [bash]
       source: |
         SIT_NS="{{workflow.parameters.sit-ns}}"
-        DECISION="{{inputs.parameters.decision}}"
         echo "=== ArgoCD SIT Application 狀態 ==="
         kubectl -n argocd get application petclinic-sit
         echo ""
@@ -216,5 +183,5 @@ spec:
           echo
         done
         echo ""
-        echo "=== Pipeline 決策：${DECISION} ==="
-        echo "─── Pipeline 結束。詳細證據請執行 scripts/collect-evidence.sh ───"
+        echo "✅ Pipeline 完成（GO）— 此 step 可執行代表 Phase 4 已通過"
+        echo "─── 詳細證據請執行 scripts/collect-evidence.sh ───"
