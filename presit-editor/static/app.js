@@ -18,6 +18,11 @@ const btnRun = $('btn-run');
 const btnReport = $('btn-report');
 const pipelineStatus = $('pipeline-status');
 const modalNew = $('modal-new');
+const modalImport = $('modal-import');
+const importFileInput = $('import-file-input');
+
+// Pending import content while modal is open
+let _importContent = '';
 
 // ── Init ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -36,6 +41,10 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btn-new').addEventListener('click', () => modalNew.classList.remove('hidden'));
   $('btn-modal-cancel').addEventListener('click', () => modalNew.classList.add('hidden'));
   $('btn-modal-create').addEventListener('click', createFeature);
+  $('btn-import').addEventListener('click', () => importFileInput.click());
+  importFileInput.addEventListener('change', onImportFileSelected);
+  $('btn-import-cancel').addEventListener('click', () => { modalImport.classList.add('hidden'); _importContent = ''; });
+  $('btn-import-confirm').addEventListener('click', confirmImport);
 });
 
 // ── Feature List ───────────────────────────────────────────────────────────
@@ -169,6 +178,7 @@ function renderEditor(path, content) {
   panelEditor.innerHTML = `
     <div class="editor-toolbar">
       <span class="editor-path">${path}</span>
+      <button id="btn-export">⬇ 匯出</button>
       <button id="btn-delete">🗑 刪除</button>
       <button id="btn-save">💾 儲存並推送</button>
     </div>
@@ -180,6 +190,7 @@ function renderEditor(path, content) {
   });
   $('btn-save').addEventListener('click', saveFeature);
   $('btn-delete').addEventListener('click', deleteFeature);
+  $('btn-export').addEventListener('click', exportFeature);
 }
 
 function showEditorError(msg) {
@@ -421,6 +432,73 @@ function switchTab(tab) {
   panelEditor.classList.toggle('active', tab === 'editor');
   panelResults.classList.toggle('active', tab === 'results');
   if (tab === 'results' && state.current) renderResultsForFeature(state.current);
+}
+
+// ── Export ────────────────────────────────────────────────────────────────
+function exportFeature() {
+  const content = $('editor-area').value;
+  const filename = state.current.split('/').pop();  // keep the original .feature filename
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ── Import ────────────────────────────────────────────────────────────────
+function onImportFileSelected(e) {
+  const file = e.target.files[0];
+  e.target.value = '';  // reset so same file can be re-selected
+  if (!file) return;
+  if (!file.name.endsWith('.feature')) {
+    alert('請選擇副檔名為 .feature 的檔案');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    _importContent = ev.target.result;
+    $('import-path').value = file.name;
+    modalImport.classList.remove('hidden');
+    $('import-path').focus();
+    $('import-path').select();
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+async function confirmImport() {
+  const path = $('import-path').value.trim();
+  if (!path || !path.endsWith('.feature')) {
+    alert('路徑必須以 .feature 結尾');
+    return;
+  }
+  const exists = state.features.some(f => f.path === path);
+  if (exists && !confirm(`「${path}」已存在，確定要覆蓋並推送嗎？`)) return;
+
+  const btn = $('btn-import-confirm');
+  btn.disabled = true;
+  btn.textContent = '匯入中…';
+  try {
+    const method = exists ? 'PUT' : 'POST';
+    const res = await fetch(`/api/features/${encodeURIComponent(path)}`, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: _importContent }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    modalImport.classList.add('hidden');
+    _importContent = '';
+    await loadFeatures();
+    await selectFeature(path);
+  } catch (err) {
+    alert('匯入失敗：' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '確認匯入';
+  }
 }
 
 // ── Report Generation ──────────────────────────────────────────────────────
