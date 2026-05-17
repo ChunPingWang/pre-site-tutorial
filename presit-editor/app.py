@@ -5,7 +5,7 @@ from pathlib import Path
 
 import git
 from fastapi import Body, FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from kubernetes import client, config
 
@@ -184,5 +184,10 @@ def pipeline_status():
     }
 
 
-# Serve static UI (must be last)
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+# Serve static assets at /static/ (keeps API routes unambiguous)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.get("/", include_in_schema=False)
+def root():
+    return FileResponse("static/index.html")

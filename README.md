@@ -27,6 +27,7 @@
    - [7.9 v2.3 完整環境 Quick Start ⭐](#79-v23-完整環境-quick-start)
    - [7.10 v2.3 Postgres PVC Snapshot / Restore](#710-v23-postgres-pvc-snapshot--restore)
    - [7.11 v2.3 Argo Workflows：取代 Jenkins](#711-v23-argo-workflows取代-jenkins)
+   - [7.12 v2.3 Gherkin Editor：瀏覽器管理測試案例](#712-v23-gherkin-editor瀏覽器管理測試案例)
 8. [目錄結構說明](#8-目錄結構說明)
 9. [常見問題（FAQ）](#9-常見問題faq)
 10. [延伸學習路徑](#10-延伸學習路徑)
@@ -1422,6 +1423,79 @@ api-gateway:         localhost:5000/petclinic-api-gateway:sit-approved
 > - `manifests/argo-workflows/20-workflow-template.yaml` — 六步 Pipeline WorkflowTemplate
 > - `manifests/argo-workflows/30-ingress.yaml` — `argo.local` → `argo-server:2746`
 > - `scripts/setup-argo-workflows.sh` — 一鍵安裝
+
+### 7.12 v2.3 Gherkin Editor：瀏覽器管理測試案例
+
+提供 Web UI，讓測試人員不需命令列即可：
+- **瀏覽 / 新增 / 編輯 / 刪除** `.feature` 檔案，修改後自動 commit + push 回 GitHub
+- **紅/綠燈** 顯示各 Scenario 的最新測試結果（讀取 cucumber-report.json）
+- **一鍵觸發** Argo Workflows Pre-SIT Pipeline
+
+#### 前提
+
+- Kind presit 叢集已就緒（`bash scripts/setup-v23.sh` 已執行）
+- Argo Workflows 已安裝（`bash scripts/setup-argo-workflows.sh` 已執行）
+- GitHub Personal Access Token（需有 `repo` scope）
+
+#### 安裝
+
+```bash
+# 設定 GitHub Token（需有 repo scope）
+export GITHUB_TOKEN="ghp_xxxxxxxxxxxx"
+
+# 一鍵安裝（build image → 建立 Secret → 套用 manifests）
+bash scripts/setup-presit-editor.sh
+
+# 加入 /etc/hosts（一次性）
+echo "127.0.0.1 presit-editor.local" | sudo tee -a /etc/hosts
+```
+
+安裝完成後訪問：**http://presit-editor.local:30080**
+
+#### 介面說明
+
+```
+┌────────────────────────────────────────────────────────────┐
+│  🧪 Pre-SIT Gherkin Editor           [▶ Run Pipeline]      │
+├──────────────────┬─────────────────────────────────────────┤
+│ Feature 瀏覽     │  [編輯] [測試結果]  tab                  │
+│                  │                                         │
+│ 📁 database/     │  編輯模式：                              │
+│   🟢 01_db...    │    Gherkin 原始文字（可直接修改）         │
+│   🔴 02_app...   │    [💾 儲存並推送]  [🗑 刪除]            │
+│                  │                                         │
+│ 📁 application/  │  測試結果模式：                          │
+│   🟢 ...         │    🟢 Scenario 名稱  (12 ms)            │
+│ ─────────────── │    🔴 Scenario 名稱  (FAILED)            │
+│ [+ 新增 Feature] │    決策：GO ✅ / NOGO ❌                  │
+└──────────────────┴─────────────────────────────────────────┘
+```
+
+| 操作 | 說明 |
+|------|------|
+| 點選左側 Feature | 在右側顯示 Gherkin 原文（編輯 tab）與紅/綠燈結果（結果 tab） |
+| 修改後點「儲存並推送」 | 自動 `git commit` + `git push` 回 GitHub |
+| 點「+ 新增 Feature」 | 輸入相對路徑（如 `database/05_new.feature`）建立新檔 |
+| 點「🗑 刪除」 | 從 Git 刪除並推送 |
+| 點「▶ Run Pipeline」 | 觸發 Argo Workflows `presit-pipeline`，Pipeline 狀態即時顯示在右上角 |
+
+#### 技術說明
+
+| 元件 | 說明 |
+|------|------|
+| Backend | Python 3.11 + FastAPI，in-cluster Deployment（`pre-sit` namespace） |
+| Frontend | Pure HTML + Vanilla JS，無需 build 步驟 |
+| Git 操作 | `gitpython`，以 `GITHUB_TOKEN` K8s Secret 做 HTTPS push |
+| 測試結果來源 | 掛載 `presit-reports` PVC（readOnly），直接讀 cucumber-report.json |
+| Pipeline 觸發 | Kubernetes Python client，建立 `Workflow` CRD object |
+| Ingress | `presit-editor.local:30080`，與其他服務同一 nginx-ingress |
+
+#### 相關檔案
+
+- `presit-editor/app.py` — FastAPI 主程式（8 個 API endpoint）
+- `presit-editor/static/` — 前端 HTML / JS / CSS
+- `manifests/presit-editor/` — K8s YAML（RBAC、Deployment、Service、Ingress）
+- `scripts/setup-presit-editor.sh` — 一鍵安裝腳本
 
 ---
 
