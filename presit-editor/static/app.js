@@ -7,6 +7,7 @@ const state = {
   dirty: false,
   pipelinePoller: null,
   phasePollers: {},    // {phaseNum: intervalId}
+  resetPoller: null,
 };
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
@@ -16,6 +17,7 @@ const panelEditor = $('panel-editor');
 const panelResults = $('panel-results');
 const btnRun = $('btn-run');
 const btnReport = $('btn-report');
+const btnReset = $('btn-reset');
 const pipelineStatus = $('pipeline-status');
 const modalNew = $('modal-new');
 const modalImport = $('modal-import');
@@ -30,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadDecision();
   loadAllPhaseResults();  // preload so sidebar dots are colored on startup
   checkPipelineStatus();
+  checkResetStatus();
 
   // Tab switching
   document.querySelectorAll('.tab').forEach(tab => {
@@ -38,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   btnRun.addEventListener('click', runPipeline);
   btnReport.addEventListener('click', generateReport);
+  btnReset.addEventListener('click', resetEnv);
   $('btn-new').addEventListener('click', () => modalNew.classList.remove('hidden'));
   $('btn-modal-cancel').addEventListener('click', () => modalNew.classList.add('hidden'));
   $('btn-modal-create').addEventListener('click', createFeature);
@@ -73,13 +77,14 @@ function renderTree() {
   }
 
   const pipelineRunning = !!state.pipelinePoller;
+  const resetting = !!state.resetPoller;
   let html = '';
   for (const [group, files] of Object.entries(groups)) {
     const phase = guessPhaseFromFiles(files);
     const phasePolling = phase && !!state.phasePollers[phase];
     const phaseDot = phasePolling ? 'running' : (phase ? getPhaseStatus(phase) : '');
     const btnIcon = phasePolling ? '⏳ 執行中' : '▶ 執行';
-    const btnDisabled = (phasePolling || pipelineRunning) ? 'disabled' : '';
+    const btnDisabled = (phasePolling || pipelineRunning || resetting) ? 'disabled' : '';
     const phaseBtn = phase
       ? `<button class="btn-run-phase" data-phase="${phase}" ${btnDisabled}>${btnIcon}</button>`
       : '';
@@ -439,9 +444,10 @@ function updateStatusBadge(data) {
 
 function syncRunButton() {
   const anyPhaseRunning = Object.keys(state.phasePollers).length > 0;
-  if (anyPhaseRunning || state.pipelinePoller) {
+  const blocked = anyPhaseRunning || !!state.pipelinePoller || !!state.resetPoller;
+  if (blocked) {
     btnRun.disabled = true;
-    if (!state.pipelinePoller) btnRun.textContent = '⏳ 執行中…';
+    if (!state.pipelinePoller && !state.resetPoller) btnRun.textContent = '⏳ 執行中…';
   } else {
     btnRun.disabled = false;
     btnRun.textContent = '▶ Run Pipeline';
@@ -521,6 +527,65 @@ async function confirmImport() {
     btn.disabled = false;
     btn.textContent = '確認匯入';
   }
+}
+
+// ── Environment Reset ─────────────────────────────────────────────────────────
+async function resetEnv() {
+  if (!confirm('確定清除所有測試結果並重置資料庫？\n\n此操作將：\n• 刪除全部 BDD 測試 Jobs\n• 清除 cucumber 報告\n• 重啟 Postgres（emptyDir 清空，Flyway 重建測試資料）\n• 重啟 PetClinic 服務')) return;
+  btnReset.disabled = true;
+  btnReset.textContent = '⏳ 重置中…';
+  btnRun.disabled = true;
+  state.results = {};
+  state.decision = null;
+  renderTree();
+  try {
+    const res = await fetch('/api/reset', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || JSON.stringify(data));
+    startResetPolling();
+  } catch (e) {
+    alert('重置失敗：' + e.message);
+    btnReset.disabled = false;
+    btnReset.textContent = '🔄 清除重置';
+    syncRunButton();
+  }
+}
+
+function startResetPolling() {
+  if (state.resetPoller) return;
+  state.resetPoller = setInterval(async () => {
+    try {
+      const res = await fetch('/api/reset/status');
+      const data = await res.json();
+      const done = data.status !== 'Running' && data.status !== 'Pending' && data.status !== 'none';
+      if (done) {
+        clearInterval(state.resetPoller);
+        state.resetPoller = null;
+        if (data.status === 'Succeeded') {
+          btnReset.textContent = '✅ 重置完成';
+          setTimeout(() => { btnReset.textContent = '🔄 清除重置'; btnReset.disabled = false; }, 3000);
+        } else {
+          btnReset.textContent = '❌ 重置失敗';
+          alert('環境重置失敗，請確認 K8s 狀態');
+          setTimeout(() => { btnReset.textContent = '🔄 清除重置'; btnReset.disabled = false; }, 3000);
+        }
+        syncRunButton();
+        renderTree();
+      }
+    } catch (_) {}
+  }, 5000);
+}
+
+async function checkResetStatus() {
+  try {
+    const res = await fetch('/api/reset/status');
+    const data = await res.json();
+    if (data.status === 'Running' || data.status === 'Pending') {
+      btnReset.disabled = true;
+      btnReset.textContent = '⏳ 重置中…';
+      startResetPolling();
+    }
+  } catch (_) {}
 }
 
 // ── Report Generation ──────────────────────────────────────────────────────
