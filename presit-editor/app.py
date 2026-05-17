@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import time
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
@@ -169,6 +170,10 @@ def _k8s_batch():
     _load_k8s()
     return client.BatchV1Api()
 
+def _k8s_core():
+    _load_k8s()
+    return client.CoreV1Api()
+
 
 # (profile, activeDeadlineSeconds, memory_limit)
 PHASE_PROFILES: dict[int, tuple[str, int, str]] = {
@@ -285,7 +290,6 @@ def run_phase(phase_num: int):
     except client.ApiException as exc:
         if exc.status != 404:
             raise HTTPException(500, f"Cannot delete existing job: {exc.reason}")
-    import time
     for _ in range(20):
         try:
             batch.create_namespaced_job(ns, _phase_job_body(phase_num))
@@ -326,6 +330,120 @@ def phase_run_status(phase_num: int):
         "startTime": str(job.status.start_time) if job.status.start_time else None,
         "completionTime": str(job.status.completion_time) if job.status.completion_time else None,
     }
+
+
+# ── Environment Reset ─────────────────────────────────────────────────────────
+
+RESET_JOB_NAME = "presit-env-reset"
+
+_RESET_SCRIPT = r"""
+set -e
+NS="pre-sit"
+
+echo "=== [1/4] 清除測試報告 ==="
+rm -rf /reports/phase-* /reports/presit-decision.json 2>/dev/null || true
+
+echo "=== [2/4] 刪除舊 BDD Jobs ==="
+kubectl delete jobs -n "$NS" -l app=presit-validation --ignore-not-found 2>&1 || true
+kubectl delete job presit-phase1-manual presit-phase2-manual presit-phase3-manual presit-phase4-manual \
+  -n "$NS" --ignore-not-found 2>/dev/null || true
+
+echo "=== [3/4] 重啟 Postgres（emptyDir 清空，Flyway 重建 DDL/DML）==="
+kubectl delete pod postgres-0 -n "$NS" --ignore-not-found
+sleep 5
+kubectl wait pod -l app=postgres -n "$NS" --for=condition=Ready --timeout=120s
+
+echo "=== [4/4] 重啟 PetClinic 服務 ==="
+kubectl rollout restart deployment customers-service vets-service visits-service api-gateway -n "$NS" 2>/dev/null || true
+kubectl wait deployment customers-service vets-service visits-service api-gateway \
+  -n "$NS" --for=condition=Available --timeout=300s 2>/dev/null || true
+
+echo "RESET_DONE"
+"""
+
+
+def _reset_job_body(mount_reports: bool) -> dict:
+    container: dict = {
+        "name": "reset",
+        "image": "bitnami/kubectl:latest",
+        "command": ["bash", "-c", _RESET_SCRIPT],
+    }
+    spec: dict = {
+        "restartPolicy": "Never",
+        "serviceAccountName": "presit-editor-sa",
+        "containers": [container],
+    }
+    if mount_reports:
+        container["volumeMounts"] = [{"name": "reports", "mountPath": "/reports"}]
+        spec["volumes"] = [{"name": "reports", "persistentVolumeClaim": {"claimName": "presit-reports"}}]
+    return {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "metadata": {
+            "name": RESET_JOB_NAME,
+            "namespace": "pre-sit",
+            "labels": {"app": "presit-reset"},
+        },
+        "spec": {
+            "backoffLimit": 0,
+            "activeDeadlineSeconds": 600,
+            "template": {
+                "metadata": {"labels": {"app": "presit-reset"}},
+                "spec": spec,
+            },
+        },
+    }
+
+
+@app.post("/api/reset")
+def trigger_reset():
+    batch = _k8s_batch()
+    core = _k8s_core()
+    ns = "pre-sit"
+    # Check if PVC exists so we can mount it for report clearing
+    pvc_exists = True
+    try:
+        core.read_namespaced_persistent_volume_claim("presit-reports", ns)
+    except client.ApiException:
+        pvc_exists = False
+    # Delete existing reset job (background so we can recreate immediately)
+    try:
+        batch.delete_namespaced_job(
+            RESET_JOB_NAME, ns,
+            body=client.V1DeleteOptions(propagation_policy="Background", grace_period_seconds=0),
+        )
+    except client.ApiException as exc:
+        if exc.status != 404:
+            raise HTTPException(500, f"Cannot delete existing reset job: {exc.reason}")
+    for _ in range(20):
+        try:
+            batch.create_namespaced_job(ns, _reset_job_body(pvc_exists))
+            return {"status": "triggered", "job": RESET_JOB_NAME}
+        except client.ApiException as exc:
+            if exc.status == 409:
+                time.sleep(0.5)
+            else:
+                raise HTTPException(500, f"Cannot create reset job: {exc.reason}")
+    raise HTTPException(503, "Reset job still terminating, please retry in a moment")
+
+
+@app.get("/api/reset/status")
+def reset_status():
+    batch = _k8s_batch()
+    try:
+        job = batch.read_namespaced_job(RESET_JOB_NAME, "pre-sit")
+        conds = job.status.conditions or []
+        if any(c.type in ("Complete", "SuccessCriteriaMet") and c.status == "True" for c in conds):
+            return {"status": "Succeeded"}
+        if any(c.type == "Failed" and c.status == "True" for c in conds):
+            return {"status": "Failed"}
+        if job.status.active:
+            return {"status": "Running"}
+        return {"status": "Pending"}
+    except client.ApiException as exc:
+        if exc.status == 404:
+            return {"status": "none"}
+        raise HTTPException(500, str(exc))
 
 
 # ── Report Generation ─────────────────────────────────────────────────────────
