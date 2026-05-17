@@ -137,32 +137,41 @@ graph LR
 
 > 關鍵設計：Phase 3/4 的 initContainer 用 **soft wait**，使前序失敗時後序仍可執行，便於**一次 rerun 收集完整失敗證據**，避免反覆人工觸發。
 
-### 2.3 統一使用 PostgreSQL
+### 2.3 兩個環境、兩個獨立資料庫
 
-所有 Phase（1–4）共用同一個 PostgreSQL StatefulSet，PetClinic 微服務也連接同一個 DB。這讓 Phase 1 的 Schema 驗證與 Phase 2/3/4 的應用驗證真正端對端一致：Schema 對了、資料也對了，API 才會通過。
+Pre-SIT 與 SIT 各自擁有獨立的 PostgreSQL StatefulSet，**完全不共用**：
 
 ```mermaid
-flowchart TB
-    PG[(PostgreSQL<br/>StatefulSet<br/>pre-sit namespace)]
-
-    subgraph "Phase 1"
-        P1[DB Schema 驗證<br/>7 張表、欄位、constraint]
-    end
-    subgraph "Phase 2/3/4"
-        APP[PetClinic 微服務<br/>customers / vets / visits / api-gateway]
-        P234[App 健康 / API 功能 / E2E 決策]
-        APP --- P234
+flowchart LR
+    subgraph PRE["pre-sit namespace（自動化測試）"]
+        PG1[(PostgreSQL\npre-sit)]
+        BDD[Phase 1–4\nBDD 自動化測試]
+        PG1 --> BDD
     end
 
-    PG --> P1
-    PG --> APP
+    subgraph SIT["sit namespace（正式驗收）"]
+        PG2[(PostgreSQL\nsit)]
+        APP[PetClinic 微服務\n+ BA/SA 探索測試]
+        PG2 --> APP
+    end
 
-    style PG fill:#9cf,stroke:#06c
-    style P1 fill:#ddf
-    style P234 fill:#ddf
+    BDD -->|"GO ✅\npromote :sit-approved"| APP
+
+    style PG1 fill:#9cf,stroke:#06c
+    style PG2 fill:#9cf,stroke:#06c
+    style PRE fill:#f0f4ff,stroke:#99b
+    style SIT fill:#f0fff4,stroke:#9b9
 ```
 
-每次 pipeline 啟動時，`reset-presit` 步驟會重啟 `postgres-0` Pod，讓 InitContainer 重建 Schema 並植入種子資料，確保每次測試都從**同一個已知狀態**出發，不受上一次執行的殘留影響。
+| | pre-sit PostgreSQL | sit PostgreSQL |
+|---|---|---|
+| **用途** | 自動化測試專用 | 正式 SIT 驗收 |
+| **資料來源** | InitContainer 每次重建 schema + 種子資料 | 長期累積，BA/SA 手動維護 |
+| **生命週期** | 每次 pipeline 執行前重啟，從已知狀態出發 | 持久保留，可用 snapshot/restore 管理 |
+| **誰會寫入** | BDD Phase 1–4 自動測試 | BA/SA 探索測試、手動操作 |
+| **與對方的關係** | 完全隔離，絕不碰 sit DB | 只在 promote 後被動接收新版 App |
+
+**關鍵意義**：Pre-SIT 的測試無論跑幾次、失敗幾次，都不會影響 SIT 的資料狀態。BA/SA 在 SIT 環境的測試資料始終由自己掌控，不會因為自動化測試而被污染或意外重置。
 
 ### 2.4 Tag-based 場景分層
 
