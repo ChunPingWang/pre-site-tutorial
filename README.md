@@ -1048,7 +1048,22 @@ kubectl get secret petclinic-db-credentials -n pre-sit \
 
 ### 7.8 v2.3 Per-user SIT Namespace：每位測試人員獨立沙盒
 
-多人同時測試時，共用一個 SIT namespace 會互相污染資料。v2.3 新增一行指令即可為任意使用者建立完整隔離的 SIT 環境（獨立 Postgres、獨立 Ingress host）。
+> **這是 SIT（System Integration Testing）環境的功能，不是 Pre-SIT。**
+> Pre-SIT 由自動化 BDD 管道驗證，通過後的版本才 promote 到 SIT。
+> SIT 環境供 BA／SA／測試人員**手動探索性測試**，每人擁有完整獨立的應用程式與資料庫。
+
+#### 解決的問題
+
+傳統做法只有一個共用 SIT namespace，多人同時測試時會互相干擾：
+
+| 情境 | 共用 SIT 的問題 |
+|------|----------------|
+| Alice 新增寵物 Owner → Bob 的清單被改變 | 測試資料互相污染，難以重現 Bug |
+| Alice 執行壓力測試或批次資料灌入 | 影響 Bob 的 API 回應時間與資料正確性 |
+| 測試完需要重置為乾淨狀態 | 誰要重置？重置後影響所有人 |
+| 兩人同時測試不同版本的功能 | 同一 namespace 只能跑同一套 image |
+
+v2.3 為每位測試人員建立**完全隔離的 SIT 沙盒**：獨立 Postgres、獨立 PetClinic 服務、獨立 Ingress host，彼此完全不干擾。
 
 #### 設計原則
 
@@ -1108,8 +1123,69 @@ K8s 資源建立在 sit-bob namespace
 ```bash
 echo '127.0.0.1 bob-sit.local' | sudo tee -a /etc/hosts
 curl -s -H 'Host: bob-sit.local' http://localhost:30080/api/customer/owners | jq length
-# 預期: 10
+# 預期: 10（Flyway 初始測試資料）
 ```
+
+瀏覽器開啟：**`http://bob-sit.local:30080`** → 看到 PetClinic UI，資料完全屬於 Bob，不受其他人影響。
+
+#### 測試人員實際工作流程
+
+以 Alice 為例，從收到測試任務到開始測試：
+
+```
+1. 管理員執行：scripts/create-sit-user.sh alice
+   → sit-alice namespace 建立，含獨立 Postgres + PetClinic 服務
+
+2. Alice 的 /etc/hosts 新增一行：
+   echo '127.0.0.1 alice-sit.local' | sudo tee -a /etc/hosts
+
+3. 開啟瀏覽器 http://alice-sit.local:30080
+   → 看到 PetClinic 初始資料（10 筆 owner，Flyway 載入）
+
+4. Alice 自由測試：
+   - 新增 / 修改 / 刪除 Owner、Pet、Visit
+   - 測試 API 呼叫（Swagger / Postman）
+   - 驗證 Bug Fix 是否生效
+   → 所有操作只影響 sit-alice namespace，Bob / Carol 的環境完全不受影響
+
+5. 需要重置乾淨資料時：
+   scripts/delete-sit-user.sh alice && scripts/create-sit-user.sh alice
+   → 30 秒後 sit-alice 回到 Flyway 初始狀態
+
+6. 測試結束，管理員清理：
+   scripts/delete-sit-user.sh alice
+   → namespace + PVC + Ingress 全部刪除
+```
+
+#### 多人並行測試
+
+團隊可以為每位測試人員各建一個沙盒，各自獨立：
+
+```bash
+scripts/create-sit-user.sh alice
+scripts/create-sit-user.sh bob
+scripts/create-sit-user.sh carol
+```
+
+| 測試人員 | 存取 URL | Postgres | 資料狀態 |
+|---------|---------|---------|---------|
+| Alice | `http://alice-sit.local:30080` | `sit-alice` namespace 獨立 | 各自獨立 |
+| Bob | `http://bob-sit.local:30080` | `sit-bob` namespace 獨立 | 各自獨立 |
+| Carol | `http://carol-sit.local:30080` | `sit-carol` namespace 獨立 | 各自獨立 |
+
+三人同時測試、同時修改資料，互不干擾。
+
+#### 與共用 SIT 的比較
+
+| | 共用 SIT（傳統） | Per-user SIT（v2.3） |
+|--|----------------|---------------------|
+| 資料隔離 | ❌ 互相污染 | ✅ 完全隔離 |
+| 並行測試 | ❌ 互相等待 | ✅ 各自獨立進行 |
+| 環境重置 | ❌ 影響所有人 | ✅ 只重置自己的沙盒 |
+| 建立成本 | — | ✅ 一行指令，約 30 秒 |
+| 資源使用 | 1 套 Postgres + PetClinic | N 套（每人一套），資源需求等比 |
+
+> **建議**：SIT 環境資源有限時，測試完成即刪除（`delete-sit-user.sh`），需要時再重建，不需常駐。
 
 #### 檔案結構
 
