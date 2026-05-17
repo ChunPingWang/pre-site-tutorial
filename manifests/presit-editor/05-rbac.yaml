@@ -26,3 +26,28 @@ subjects:
 - kind: ServiceAccount
   name: presit-editor-sa
   namespace: pre-sit
+---
+# Allow creating / deleting phase Jobs in pre-sit namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: presit-editor-job-manager
+  namespace: pre-sit
+rules:
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["create", "get", "list", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: presit-editor-job-manager
+  namespace: pre-sit
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: presit-editor-job-manager
+subjects:
+- kind: ServiceAccount
+  name: presit-editor-sa
+  namespace: pre-sit

@@ -148,14 +148,90 @@ def get_phase_results(phase: int):
     return json.loads(f.read_text())
 
 
-# ── Pipeline Trigger ──────────────────────────────────────────────────────────
+# ── Pipeline / Phase Trigger ──────────────────────────────────────────────────
+
+_K8S_LOADED = False
+
+def _load_k8s():
+    global _K8S_LOADED
+    if not _K8S_LOADED:
+        try:
+            config.load_incluster_config()
+        except config.ConfigException:
+            config.load_kube_config()
+        _K8S_LOADED = True
 
 def _k8s_custom():
-    try:
-        config.load_incluster_config()
-    except config.ConfigException:
-        config.load_kube_config()
+    _load_k8s()
     return client.CustomObjectsApi()
+
+def _k8s_batch():
+    _load_k8s()
+    return client.BatchV1Api()
+
+
+# (profile, activeDeadlineSeconds, memory_limit)
+PHASE_PROFILES: dict[int, tuple[str, int, str]] = {
+    1: ("phase-1", 300,  "768Mi"),
+    2: ("phase-2", 600,  "768Mi"),
+    3: ("phase-3", 900,  "768Mi"),
+    4: ("phase-4", 900,  "1Gi"),
+}
+
+
+def _phase_job_body(phase_num: int) -> dict:
+    profile, deadline, mem_limit = PHASE_PROFILES[phase_num]
+    cmd = (
+        f"mvn test -P {profile} -q ; RC=$?\n"
+        f"mkdir -p /reports/phase-{phase_num} && cp -r reports/. /reports/phase-{phase_num}/ 2>/dev/null || true\n"
+        f"exit $RC"
+    )
+    return {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "metadata": {
+            "name": f"presit-phase{phase_num}-manual",
+            "namespace": "pre-sit",
+            "labels": {"app": "presit-validation", "phase": str(phase_num), "trigger": "manual"},
+        },
+        "spec": {
+            "backoffLimit": 0,
+            "activeDeadlineSeconds": deadline,
+            "template": {
+                "metadata": {"labels": {"app": "presit-validation", "phase": str(phase_num)}},
+                "spec": {
+                    "restartPolicy": "Never",
+                    "serviceAccountName": "presit-sa",
+                    "initContainers": [{
+                        "name": "wait-for-db",
+                        "image": "busybox:1.36",
+                        "command": ["sh", "-c", "until nc -z postgres 5432; do sleep 2; done"],
+                    }],
+                    "containers": [{
+                        "name": "bdd-runner",
+                        "image": "localhost:5000/presit-bdd-runner:v2.2",
+                        "imagePullPolicy": "Always",
+                        "command": ["sh", "-c", cmd],
+                        "env": [
+                            {"name": "DB_HOST",     "value": "postgres"},
+                            {"name": "DB_PORT",     "value": "5432"},
+                            {"name": "DB_NAME",     "value": "petclinic"},
+                            {"name": "DB_USER",     "valueFrom": {"secretKeyRef": {"name": "petclinic-db-credentials", "key": "POSTGRES_USER"}}},
+                            {"name": "DB_PASSWORD", "valueFrom": {"secretKeyRef": {"name": "petclinic-db-credentials", "key": "POSTGRES_PASSWORD"}}},
+                            {"name": "GATEWAY_URL", "value": "http://api-gateway:8080"},
+                            {"name": "REPORT_DIR",  "value": "/reports"},
+                        ],
+                        "volumeMounts": [{"name": "reports", "mountPath": "/reports"}],
+                        "resources": {
+                            "requests": {"cpu": "200m", "memory": "384Mi"},
+                            "limits":   {"cpu": "1",    "memory": mem_limit},
+                        },
+                    }],
+                    "volumes": [{"name": "reports", "persistentVolumeClaim": {"claimName": "presit-reports"}}],
+                },
+            },
+        },
+    }
 
 
 @app.post("/api/run")
@@ -191,6 +267,64 @@ def pipeline_status():
         "phase": latest.get("status", {}).get("phase", "Unknown"),
         "startedAt": latest.get("status", {}).get("startedAt"),
         "finishedAt": latest.get("status", {}).get("finishedAt"),
+    }
+
+
+@app.post("/api/run/phase/{phase_num}")
+def run_phase(phase_num: int):
+    if phase_num not in PHASE_PROFILES:
+        raise HTTPException(400, f"Phase must be 1–4, got {phase_num}")
+    batch = _k8s_batch()
+    ns, job_name = "pre-sit", f"presit-phase{phase_num}-manual"
+    # Delete any existing manual job (background deletion; retry create on 409)
+    try:
+        batch.delete_namespaced_job(
+            job_name, ns,
+            body=client.V1DeleteOptions(propagation_policy="Background", grace_period_seconds=0),
+        )
+    except client.ApiException as exc:
+        if exc.status != 404:
+            raise HTTPException(500, f"Cannot delete existing job: {exc.reason}")
+    import time
+    for _ in range(20):
+        try:
+            batch.create_namespaced_job(ns, _phase_job_body(phase_num))
+            return {"status": "triggered", "job": job_name, "phase": phase_num}
+        except client.ApiException as exc:
+            if exc.status == 409:
+                time.sleep(0.5)
+            else:
+                raise HTTPException(500, f"Cannot create job: {exc.reason}")
+    raise HTTPException(503, "Job still terminating, please retry in a moment")
+
+
+@app.get("/api/run/phase/{phase_num}/status")
+def phase_run_status(phase_num: int):
+    if phase_num not in PHASE_PROFILES:
+        raise HTTPException(400, f"Phase must be 1–4, got {phase_num}")
+    batch = _k8s_batch()
+    ns, job_name = "pre-sit", f"presit-phase{phase_num}-manual"
+    try:
+        job = batch.read_namespaced_job(job_name, ns)
+    except client.ApiException as exc:
+        if exc.status == 404:
+            return {"phase": phase_num, "status": "none"}
+        raise HTTPException(500, str(exc))
+    conds = job.status.conditions or []
+    if any(c.type == "Complete" and c.status == "True" for c in conds):
+        status = "Succeeded"
+    elif any(c.type == "Failed" and c.status == "True" for c in conds):
+        status = "Failed"
+    elif job.status.active:
+        status = "Running"
+    else:
+        status = "Pending"
+    return {
+        "phase": phase_num,
+        "job": job_name,
+        "status": status,
+        "startTime": str(job.status.start_time) if job.status.start_time else None,
+        "completionTime": str(job.status.completion_time) if job.status.completion_time else None,
     }
 
 

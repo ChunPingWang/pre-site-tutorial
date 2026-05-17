@@ -6,6 +6,7 @@ const state = {
   current: null,       // currently selected feature path
   dirty: false,
   pipelinePoller: null,
+  phasePollers: {},    // {phaseNum: intervalId}
 };
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
@@ -22,6 +23,7 @@ const modalNew = $('modal-new');
 document.addEventListener('DOMContentLoaded', () => {
   loadFeatures();
   loadDecision();
+  loadAllPhaseResults();  // preload so sidebar dots are colored on startup
   checkPipelineStatus();
 
   // Tab switching
@@ -63,12 +65,24 @@ function renderTree() {
 
   let html = '';
   for (const [group, files] of Object.entries(groups)) {
-    html += `<div class="phase-group"><div class="phase-label">${group}</div>`;
+    const phase = guessPhaseFromFiles(files);
+    const isRunning = phase && !!state.phasePollers[phase];
+    const phaseDot = isRunning ? 'running' : (phase ? getPhaseStatus(phase) : '');
+    const btnIcon = isRunning ? '⏳' : '▶';
+    const btnDisabled = isRunning ? 'disabled' : '';
+    const phaseBtn = phase
+      ? `<button class="btn-run-phase" data-phase="${phase}" ${btnDisabled} title="單獨執行 ${group}">${btnIcon}</button>`
+      : '';
+    html += `<div class="phase-group">
+      <div class="phase-label">
+        <div class="dot ${phaseDot}"></div>
+        <span class="phase-name">${group}</span>
+        ${phaseBtn}
+      </div>`;
     for (const f of files) {
       const dotClass = getFeatureDotClass(f.path);
       const active = state.current === f.path ? ' active' : '';
-      html += `
-        <div class="feature-item${active}" data-path="${f.path}">
+      html += `<div class="feature-item${active}" data-path="${f.path}">
           <div class="dot ${dotClass}"></div>
           <span class="name" title="${f.path}">${f.name}</span>
         </div>`;
@@ -80,6 +94,30 @@ function renderTree() {
   document.querySelectorAll('.feature-item').forEach(el => {
     el.addEventListener('click', () => selectFeature(el.dataset.path));
   });
+  document.querySelectorAll('.btn-run-phase').forEach(btn => {
+    btn.addEventListener('click', e => { e.stopPropagation(); runPhase(parseInt(btn.dataset.phase)); });
+  });
+}
+
+// Derive phase number from the feature files in a group
+function guessPhaseFromFiles(files) {
+  for (const f of files) {
+    const p = guessPhase(f.path);
+    if (p !== null) return p;
+  }
+  return null;
+}
+
+// Phase-level status: summary over all features in that phase
+function getPhaseStatus(phase) {
+  const data = state.results[phase];
+  if (!data || !data.length) return '';
+  const allPassed = data.every(f =>
+    (f.elements || []).filter(e => e.type !== 'background').every(e =>
+      (e.steps || []).every(s => s.result && s.result.status === 'passed')
+    )
+  );
+  return allPassed ? 'passed' : 'failed';
 }
 
 function getFeatureDotClass(featurePath) {
@@ -219,6 +257,11 @@ async function loadPhaseResults(phase) {
   } catch (_) {}
 }
 
+async function loadAllPhaseResults() {
+  await Promise.all([1, 2, 3, 4].map(p => loadPhaseResults(p)));
+  renderTree();  // refresh dots after all results are loaded
+}
+
 function renderResultsForFeature(path) {
   const phase = guessPhase(path);
   const phaseData = phase ? state.results[phase] : null;
@@ -272,6 +315,41 @@ function renderResultsForFeature(path) {
   }
 
   panelResults.innerHTML = html;
+}
+
+// ── Individual Phase Execution ─────────────────────────────────────────────
+async function runPhase(phaseNum) {
+  try {
+    const res = await fetch(`/api/run/phase/${phaseNum}`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || JSON.stringify(data));
+    startPhasePolling(phaseNum);
+  } catch (e) {
+    alert(`Phase ${phaseNum} 執行失敗：${e.message}`);
+  }
+}
+
+function startPhasePolling(phaseNum) {
+  if (state.phasePollers[phaseNum]) return;
+  renderTree();  // show spinner immediately
+  state.phasePollers[phaseNum] = setInterval(async () => {
+    try {
+      const res = await fetch(`/api/run/phase/${phaseNum}/status`);
+      const data = await res.json();
+      const done = data.status !== 'Running' && data.status !== 'Pending' && data.status !== 'none';
+      if (done) {
+        clearInterval(state.phasePollers[phaseNum]);
+        delete state.phasePollers[phaseNum];
+        // Reload results for this phase only
+        delete state.results[phaseNum];
+        await loadPhaseResults(phaseNum);
+        renderTree();
+        if (state.current && guessPhase(state.current) === phaseNum) {
+          renderResultsForFeature(state.current);
+        }
+      }
+    } catch (_) {}
+  }, 5000);
 }
 
 // ── Pipeline ───────────────────────────────────────────────────────────────
