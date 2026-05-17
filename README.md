@@ -68,15 +68,20 @@ flowchart TD
 ```mermaid
 flowchart LR
     A[Git Push] --> B[Docker Build]
-    B --> C[ArgoCD Sync]
-    C --> D[K8s 部署<br/>容器化 DB + App]
-    D --> E[Phase 1: DB Schema 驗證]
-    E --> F[Phase 2: App 健康驗證]
-    F --> G[Phase 3: API 功能驗證]
-    G --> H[Phase 4: E2E + 性能 + 決策]
-    H -->|通過率 達 95%| I[✅ GO → SIT]
+
+    subgraph PRESIT["⬛ Pre-SIT（自動化驗證，不碰 SIT DB）"]
+        B --> C[ArgoCD Sync]
+        C --> D[K8s 部署<br/>容器化 DB + App]
+        D --> E[Phase 1: DB Schema 驗證]
+        E --> F[Phase 2: App 健康驗證]
+        F --> G[Phase 3: API 功能驗證]
+        G --> H[Phase 4: E2E + 性能 + 決策]
+    end
+
+    H -->|通過率 達 95%| I[✅ GO → SIT 驗收]
     H -->|通過率 未達 95%| J[❌ NO-GO → 修復]
 
+    style PRESIT fill:#f0f4ff,stroke:#669,stroke-width:2px
     style E fill:#cfc
     style F fill:#cfc
     style G fill:#cfc
@@ -115,13 +120,16 @@ flowchart LR
 
 ```mermaid
 graph LR
-    DB["PostgreSQL Ready<br/>nc -z :5432"] --> P1["Phase 1<br/>DB Schema 驗證"]
-    P1 -->|hard wait| P2["Phase 2<br/>App 層驗證"]
-    APP["All Pods Ready<br/>kubectl wait"] --> P2
-    P2 -->|soft wait| P3["Phase 3<br/>功能集成"]
-    P3 -->|soft wait| P4["Phase 4<br/>E2E + 決策"]
-    P4 --> R[("presit-decision.json<br/>GO / NO-GO")]
+    subgraph PRESIT["Pre-SIT namespace（Phase 1–4 全在此執行）"]
+        DB["PostgreSQL Ready<br/>nc -z :5432"] --> P1["Phase 1<br/>DB Schema 驗證"]
+        P1 -->|hard wait| P2["Phase 2<br/>App 層驗證"]
+        APP["All Pods Ready<br/>kubectl wait"] --> P2
+        P2 -->|soft wait| P3["Phase 3<br/>功能集成"]
+        P3 -->|soft wait| P4["Phase 4<br/>E2E + 決策"]
+        P4 --> R[("presit-decision.json<br/>GO / NO-GO")]
+    end
 
+    style PRESIT fill:#f0f4ff,stroke:#669,stroke-width:2px
     style P1 fill:#ddf
     style P2 fill:#ddf
     style P3 fill:#ddf
