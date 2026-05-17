@@ -70,8 +70,13 @@
 <div class="modal-overlay hidden" id="modal-import">
   <div class="modal">
     <h3>匯入 Feature 檔案</h3>
-    <div style="font-size:12px;color:#888;">確認儲存路徑（相對於 presit-bdd-demo/features/）</div>
+    <div style="font-size:12px;color:#888;">儲存路徑（相對於 presit-bdd-demo/features/）</div>
     <input id="import-path" type="text" placeholder="例：database/05_new_check.feature">
+    <div style="font-size:11px;color:#aaa;margin-top:-4px;">
+      加入子目錄前綴可對應 Phase：<br>
+      database/ → Phase 1 &nbsp; application/ → Phase 2<br>
+      integration/ → Phase 3 &nbsp; e2e/ → Phase 4
+    </div>
     <div class="modal-actions">
       <button id="btn-import-cancel">取消</button>
       <button id="btn-import-confirm">確認匯入</button>
