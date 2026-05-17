@@ -1488,6 +1488,7 @@ echo "127.0.0.1 presit-editor.local" | sudo tee -a /etc/hosts
 | Frontend | Pure HTML + Vanilla JS，無需 build 步驟 |
 | Git 操作 | `gitpython`，以 `GITHUB_TOKEN` K8s Secret 做 HTTPS push |
 | 測試結果來源 | 掛載 `presit-reports` PVC（readOnly），直接讀 cucumber-report.json |
+| Pipeline 觸發 | Jenkins API（`kubectl exec -n jenkins deploy/jenkins -- curl -X POST .../build`） |
 | Ingress | `presit-editor.local:30080`，與其他服務同一 nginx-ingress |
 
 #### 相關檔案
