@@ -1347,15 +1347,15 @@ echo "127.0.0.1 presit-editor.local" | sudo tee -a /etc/hosts
 │ Feature 檔案           │  [編輯] [測試結果]  tab                   │
 │ [📥 匯入]  [+ 新增]    │                                          │
 │                       │  編輯模式：                               │
-│ ⚫ database/    [▶]   │    Gherkin 原始文字（可直接修改）           │
+│ ⚫ database/ [▶ 執行] │    Gherkin 原始文字（可直接修改）           │
 │   🟢 01_database...   │    [⬇ 匯出]  [🗑 刪除]  [💾 儲存並推送]   │
 │   🔴 02_api...        │                                          │
 │                       │  測試結果模式：                           │
-│ 🟢 application/ [▶]   │    🟢 Scenario 名稱  (12 ms)            │
+│ 🟢 application/[▶ 執行]│   🟢 Scenario 名稱  (12 ms)            │
 │   🟢 01_app...        │    🔴 Scenario 名稱  (FAILED)           │
 │                       │    決策：GO ✅ / NOGO ❌                  │
 └───────────────────────┴──────────────────────────────────────────┘
-  Phase 旁燈號：⚫未執行  🟢全部通過  🔴有失敗  🔵執行中
+  Phase 旁燈號：⚫未執行  🟢全部通過  🔴有失敗  🔵執行中（脈動）
   Feature 燈號：⚫未執行  🟢通過      🔴失敗
 ```
 
@@ -1367,9 +1367,27 @@ echo "127.0.0.1 presit-editor.local" | sudo tee -a /etc/hosts
 | 點「📥 匯入」 | 從本機選擇 `.feature` 檔案，確認儲存路徑後 commit + push；路徑已存在則覆蓋 |
 | 點「+ 新增 Feature」 | 輸入相對路徑（如 `database/05_new.feature`）建立新檔並推送 |
 | 點「🗑 刪除」 | 從 Git 刪除並推送 |
-| 點 Phase 旁的「▶」 | **單獨執行**該 Phase 的 BDD Job（不含其他 Phase，不需跑全流程） |
+| 點 Phase 旁的「▶ 執行」 | **單獨執行**該 Phase 的 BDD Job（不含其他 Phase，不需跑全流程） |
 | 點「▶ Run Pipeline」 | **批次執行** Pre-SIT 全流程 Pipeline |
 | 點「📊 產生報告」 | 產生 HTML 測試報告（含各 Scenario 結果與 DB 資料表查詢），開啟於新分頁 |
+
+#### 注意事項
+
+**匯入後未出現「▶ 執行」按鈕**
+
+每個 Phase 群組的「▶ 執行」按鈕是依**檔名**或**目錄名**自動判斷 Phase 編號：
+
+| 符合條件 | 範例 | 判定 |
+|----------|------|------|
+| 檔名以 `0N_` 開頭（N = 1–4） | `database/01_check.feature` | Phase 1 ✓ |
+| 目錄名含 `phase-N` / `phaseN` | `phase-2/new_test.feature` | Phase 2 ✓ |
+| 不符合以上任一條件 | `my_test.feature`（放在根層） | 歸入「其他」群組，**無**「▶ 執行」按鈕 |
+
+匯入時請在路徑欄加入正確子目錄前綴（`database/`、`application/`、`integration/`、`e2e/`），即可自動顯示對應 Phase 的執行按鈕。
+
+**點「▶ Run Pipeline」沒有反應**
+
+舊版在觸發前顯示 `confirm()` 確認對話框，部分瀏覽器在 localhost 環境下會靜默封鎖此對話框，導致按鈕點擊後毫無反應。已移除確認步驟，點擊後直接觸發。
 
 #### 技術說明
 
