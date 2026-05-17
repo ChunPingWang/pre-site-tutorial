@@ -38,24 +38,31 @@
 ### 1.1 真實世界的痛點
 
 ```mermaid
-flowchart LR
-    A[開發完成] --> B[部署到 SIT]
-    B --> C{自動化測試}
-    C -->|❌ 失敗| D[懷疑是 DB?<br/>程式? 環境?]
-    D --> E[花時間排除]
-    E --> C
-    C -->|✅ 通過| F[進 UAT]
+flowchart TD
+    DEV[開發完成] --> DEPLOY[部署到 SIT]
+    DEPLOY --> TEST[在 SIT 上跑自動化測試]
+    TEST -->|❌ 失敗| DEBUG{失敗原因?}
+    DEBUG -->|程式 bug| FIX[修程式<br/>重新建置 + 部署]
+    DEBUG -->|SIT DB 資料被污染| ROLLBACK[人工回滾 SIT DB<br/>⏱ 耗時、影響其他人]
+    DEBUG -->|環境 / 設定異常| ENV[調整環境<br/>重新確認]
+    FIX --> TEST
+    ROLLBACK --> TEST
+    ENV --> TEST
+    TEST -->|✅ 通過| OK[✅ SIT 驗收完成]
 
-    style D fill:#fbb,stroke:#900
-    style E fill:#fbb,stroke:#900
+    style DEBUG fill:#fbb,stroke:#900
+    style ROLLBACK fill:#fbb,stroke:#900
+    style FIX fill:#ffe,stroke:#960
+    style ENV fill:#ffe,stroke:#960
 ```
 
-| 問題 | 影響 |
+| 痛點 | 影響 |
 |------|------|
-| SIT 資料庫狀態不可控（前個專案污染、缺資料、Schema 漂移） | 自動化測試結果不可重現 |
-| 缺陷在 SIT 才被發現 | 修復成本高（已過 dev → CI → SIT 三層） |
-| 驗證結果難以追溯 | 無法量化品質、無法產生上線決策依據 |
-| 測試需求與業務需求脫節 | QA/BA 看不懂測試代碼，覆蓋盲區持續累積 |
+| SIT DB 由多人共用，資料隨時被異動 | 同一版本今天過、明天不過；根因難定位 |
+| 測試失敗無法區分：程式問題 vs 資料問題 vs 環境問題 | 排查時間長、來回部署消耗 |
+| 回滾 SIT DB 需 DBA 介入 | 耗時且影響同時使用 SIT 的其他人 |
+| 缺陷在部署到 SIT 後才被發現 | 修復成本高（已過 dev → CI → SIT 三層） |
+| 驗證結果難以追溯 | 無法量化品質、無法產生客觀的上線決策依據 |
 
 ### 1.2 本教學的解法
 
