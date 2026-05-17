@@ -14,6 +14,7 @@ const featureTree = $('feature-tree');
 const panelEditor = $('panel-editor');
 const panelResults = $('panel-results');
 const btnRun = $('btn-run');
+const btnReport = $('btn-report');
 const pipelineStatus = $('pipeline-status');
 const modalNew = $('modal-new');
 
@@ -29,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   btnRun.addEventListener('click', runPipeline);
+  btnReport.addEventListener('click', generateReport);
   $('btn-new').addEventListener('click', () => modalNew.classList.remove('hidden'));
   $('btn-modal-cancel').addEventListener('click', () => modalNew.classList.add('hidden'));
   $('btn-modal-create').addEventListener('click', createFeature);
@@ -341,6 +343,25 @@ function switchTab(tab) {
   panelEditor.classList.toggle('active', tab === 'editor');
   panelResults.classList.toggle('active', tab === 'results');
   if (tab === 'results' && state.current) renderResultsForFeature(state.current);
+}
+
+// ── Report Generation ──────────────────────────────────────────────────────
+async function generateReport() {
+  btnReport.disabled = true;
+  btnReport.textContent = '⏳ 產生中…';
+  try {
+    const res = await fetch('/api/report/generate', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(JSON.stringify(data));
+    btnReport.textContent = '✅ 報告完成';
+    // Open the report in a new tab
+    window.open(data.url, '_blank');
+    setTimeout(() => { btnReport.textContent = '📊 產生報告'; btnReport.disabled = false; }, 3000);
+  } catch (e) {
+    btnReport.textContent = '❌ 失敗';
+    btnReport.disabled = false;
+    alert('產生報告失敗：' + e.message);
+  }
 }
 
 // ── Utils ──────────────────────────────────────────────────────────────────

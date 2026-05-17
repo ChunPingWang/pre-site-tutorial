@@ -34,6 +34,19 @@ header h1 { font-size: 16px; font-weight: 600; flex: 1; }
 #pipeline-status.succeeded { background: #14532d; color: #86efac; }
 #pipeline-status.failed { background: #7f1d1d; color: #fca5a5; }
 
+#btn-report {
+  background: #7c3aed;
+  color: #fff;
+  border: none;
+  padding: 7px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+#btn-report:hover { background: #6d28d9; }
+#btn-report:disabled { background: #555; cursor: not-allowed; }
+
 #btn-run {
   background: #16a34a;
   color: #fff;
