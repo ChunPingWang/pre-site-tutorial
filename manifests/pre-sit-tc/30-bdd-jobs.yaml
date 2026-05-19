@@ -18,7 +18,15 @@ spec:
   accessModes: [ReadWriteOnce]
   resources: { requests: { storage: 256Mi } }
 ---
-# ── Phase 1：DB schema 驗證（Testcontainers 自管 PostgreSQL）─────────────────
+# ── Phase 1：DB schema 驗證（Testcontainers + DinD sidecar）─────────────────
+#
+# Kind 節點使用 containerd 作為 CRI，無 Docker daemon socket。
+# 解法：以 docker:dind sidecar 提供 Docker daemon，兩個 container 共享
+#       emptyDir volume（掛載於 /var/run），bdd-runner 透過 DOCKER_HOST 存取。
+#
+# TESTCONTAINERS_HOST_OVERRIDE=localhost：
+#   DinD 在 pod 的共享 network namespace 中映射 port（0.0.0.0:RANDOM→5432），
+#   TC container 以 localhost:<RANDOM> 存取，bdd-runner 在同一 netns 可達。
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -27,14 +35,37 @@ metadata:
   labels: { app: presit-validation, phase: "1" }
 spec:
   backoffLimit: 1
-  activeDeadlineSeconds: 480    # TC 啟動 PG + Flyway 需額外時間
+  activeDeadlineSeconds: 1200   # DinD 啟動 + postgres:16-alpine 拉取 + Flyway
   template:
     metadata: { labels: { app: presit-validation, phase: "1" } }
     spec:
       restartPolicy: Never
       serviceAccountName: presit-sa
-      # 不需要 wait-for-db initContainer：TC 自行管理 PostgreSQL 生命週期
       containers:
+      # ── DinD sidecar：提供 Docker daemon ─────────────────────────────────
+      # 使用 termination file 方案：bdd-runner 測試結束後寫入
+      # /var/run/presit-done，DinD 偵測到後自行關閉，Job 得以正常 Complete。
+      - name: dind
+        image: docker:27-dind
+        command: [sh, -c]
+        args:
+        - |
+          dockerd-entrypoint.sh &
+          DIND_PID=$!
+          echo "[dind] dockerd 已啟動 (pid=$DIND_PID)"
+          until [ -f /var/run/presit-done ]; do sleep 2; done
+          echo "[dind] 偵測到 presit-done，關閉 dockerd"
+          kill $DIND_PID 2>/dev/null || true
+          wait $DIND_PID 2>/dev/null || true
+        securityContext: { privileged: true }
+        env:
+        - { name: DOCKER_TLS_CERTDIR, value: "" }
+        volumeMounts:
+        - { name: docker-sock, mountPath: /var/run }
+        resources:
+          requests: { cpu: 500m, memory: 512Mi }
+          limits:   { cpu: 2,    memory: 1Gi }
+      # ── BDD runner：等待 DinD 就緒後執行 TC 測試 ──────────────────────────
       - name: bdd-runner
         image: localhost:5000/presit-bdd-runner:v2.3-tc
         imagePullPolicy: Always
@@ -42,28 +73,33 @@ spec:
         - sh
         - -c
         - |
+          echo "等待 Docker daemon（DinD sidecar）就緒..."
+          until [ -S /var/run/docker.sock ]; do sleep 2; done
+          until curl -sf --unix-socket /var/run/docker.sock http://localhost/version >/dev/null; do sleep 2; done
+          echo "預拉取 postgres:16-alpine（避免 TC 首次啟動超時）..."
+          curl -s --unix-socket /var/run/docker.sock \
+            -X POST 'http://localhost/images/create?fromImage=postgres&tag=16-alpine' \
+            | grep -E '"status"|"error"' | tail -3 || true
+          echo "開始執行 BDD 測試..."
           mvn test -P phase-1 -q ; RC=$?
           mkdir -p /reports/phase-1 && cp -r reports/. /reports/phase-1/ 2>/dev/null || true
+          touch /var/run/presit-done   # 通知 DinD sidecar 關閉
           exit $RC
         env:
-        # TC 透過掛載的 socket 與 Docker daemon 通訊
-        - { name: DOCKER_HOST, value: "unix:///var/run/docker.sock" }
-        # Kind 節點的 Docker bridge 閘道（TC container 的 host 端 IP）
-        # 若 Kind 網路不同，調整此值：docker network inspect bridge | grep Gateway
-        - { name: TESTCONTAINERS_HOST_OVERRIDE, value: "172.17.0.1" }
-        # Ryuk 資源回收需要 privileged，K8s 中停用，TC container 由 AfterAll 清理
+        - { name: DOCKER_HOST,                  value: "unix:///var/run/docker.sock" }
+        - { name: TESTCONTAINERS_HOST_OVERRIDE, value: "localhost" }
         - { name: TESTCONTAINERS_RYUK_DISABLED, value: "true" }
         - { name: GATEWAY_URL, value: "http://api-gateway:8080" }
         - { name: REPORT_DIR,  value: "/reports" }
         volumeMounts:
-        - { name: docker-sock, mountPath: /var/run/docker.sock }
+        - { name: docker-sock, mountPath: /var/run }
         - { name: reports,     mountPath: /reports }
         resources:
-          requests: { cpu: 500m, memory: 768Mi }   # TC + JVM + PG 需要更多資源
+          requests: { cpu: 500m, memory: 768Mi }
           limits:   { cpu: 2,    memory: 1536Mi }
       volumes:
       - name: docker-sock
-        hostPath: { path: /var/run/docker.sock, type: Socket }
+        emptyDir: {}     # DinD 與 bdd-runner 共享（docker.sock + presit-done）
       - name: reports
         persistentVolumeClaim: { claimName: presit-reports }
 ---
