@@ -26,6 +26,7 @@
    - [7.8 v2.3 Per-user SIT Namespace](#78-v23-per-user-sit-namespace每位測試人員獨立沙盒)
    - [7.9 v2.3 完整環境 Quick Start ⭐](#79-v23-完整環境-quick-start)
    - [7.10 v2.3 Postgres PVC Snapshot / Restore](#710-v23-postgres-pvc-snapshot--restore)
+   - [7.11 v2.3 Jenkins vs Argo Workflows：架構對比](#711-v23-jenkins-vs-argo-workflows架構對比)
    - [7.12 v2.3 Gherkin Editor：瀏覽器管理測試案例](#712-v23-gherkin-editor瀏覽器管理測試案例)
 8. [目錄結構說明](#8-目錄結構說明)
 9. [常見問題（FAQ）](#9-常見問題faq)
@@ -154,7 +155,7 @@ graph LR
 |------|------|--------|
 | **`README.md`** ⭐ (本檔) | 入口與全貌 | 第一次接觸時 |
 | **[`Pre-SIT_Work_Plan_v2.2.md`](Pre-SIT_Work_Plan_v2.2.md)** ⭐ | **最新正式計畫書（v2.2，雙環境 + vendor PetClinic + Flyway + Jenkins + Ingress）** | 規劃 / 驗收 / 新加入專案 |
-| **`README.md §7.5–§7.11`**（本檔） ⭐⭐ | **v2.3 功能延伸：Jenkins CI/CD（在 Kind 內）、Observability、Sealed Secrets、Per-user SIT、PVC Snapshot** | 了解 v2.3 新功能 |
+| **`README.md §7.5–§7.12`**（本檔） ⭐⭐ | **v2.3 功能延伸：Jenkins CI/CD、Observability、Sealed Secrets、Per-user SIT、PVC Snapshot、Gherkin Editor** | 了解 v2.3 新功能 |
 | [`Pre-SIT_Work_Plan_v2.1.md`](Pre-SIT_Work_Plan_v2.1.md) | 上一代計畫書（v2.1，plan-faithful + upstream-as-is，PoC 已達 100% GO） | 對照 v2.1 → v2.2 的架構轉向 |
 | [`Pre-SIT_Work_Plan_v2.md`](Pre-SIT_Work_Plan_v2.md) | v2.0 原始版（最初版本） | 想完整理解版本演進 |
 | **[`Pre-SIT_Gherkin_to_Script_Guide.md`](Pre-SIT_Gherkin_to_Script_Guide.md)** | Gherkin ↔ Java step 對應教學 | 寫測試前 |
@@ -169,7 +170,7 @@ graph LR
 | 第一次接觸這個專案、想快速理解全貌 | **README.md**（本檔） |
 | 要新組織導入、要寫提案 / 要簽核 | **v2.2**（雙環境、vendored source、完整 CI/CD） |
 | 已經有 v2.1 PoC、想知道升級路徑 | **v2.2 §10**「v2.1 → v2.2 變更對照」 |
-| 想了解 v2.3 新功能（Jenkins CI/CD / Observability / Sealed Secrets） | **README.md §7.5–§7.11** |
+| 想了解 v2.3 新功能（Jenkins CI/CD / Observability / Sealed Secrets） | **README.md §7.5–§7.12** |
 | 想用最少資源跑通一個 demo | **v2.1** + `presit-bdd-demo/poc/`（已可跑、100% GO） |
 | 學術 / 教學 / 想了解設計演進 | 依序 v2.0 → v2.1 → v2.2 → v2.3（README §7） |
 
@@ -1381,6 +1382,44 @@ scripts/restore-db.sh sit 20260516-233303-sit
 curl -s -H 'Host: sit.local' http://localhost:30080/api/customer/owners | jq length
 # 預期: 10（還原前新增的 pet 已消失）
 ```
+
+---
+
+### 7.11 v2.3 Jenkins vs Argo Workflows：架構對比
+
+> **Branch 策略**：本分支（`v2.3-jenkins`）使用 Jenkins 作為 CI/CD orchestrator；`main` 分支改用 Argo Workflows。兩者達到相同的 pipeline 目標，架構設計不同。
+
+#### 架構對比
+
+| 面向 | Jenkins（本分支）| Argo Workflows（main 分支）|
+|------|-----------------|--------------------------|
+| 部署方式 | Deployment + ClusterIP | Helm chart（argo-workflows）|
+| Pipeline 定義 | `Jenkinsfile`（Groovy DSL）| `WorkflowTemplate`（YAML CRD）|
+| 觸發方式 | UI / curl API（CSRF 停用）| UI / argo CLI / kubectl |
+| K8s 整合 | `kubectl exec` in-cluster | 原生 `resource` template |
+| 認證 | 無密碼 admin（PoC 用）| Server 模式（無需登入，PoC 用）|
+| 資源佔用 | ~500 MB | ~200 MB |
+| Kubernetes-native | 否（額外維護 Jenkins controller）| 是（CRD-driven，無外部依賴）|
+
+#### 選用 Jenkins 的教學目的
+
+本分支存在的理由：**大多數企業已有 Jenkins 基礎建設**，不一定能立即換成 Argo Workflows。此分支展示在現有 Jenkins 環境下，如何以最小改動接入 Pre-SIT BDD Pipeline，作為**漸進式導入路線**的參考。
+
+- 企業已有 Jenkins → 以本分支為起點，逐步補足 Observability / Sealed Secrets
+- 綠地新專案 → 建議直接使用 `main`（Argo Workflows，資源更輕、更 K8s-native）
+
+#### Pipeline 結構對應（Jenkinsfile Stage ↔ Argo Step）
+
+| 順序 | Jenkins Stage | Argo WorkflowTemplate Step | 說明 |
+|------|--------------|---------------------------|------|
+| 1 | `Preflight` | `preflight` | 環境前置驗證 |
+| 2 | `Reset Pre-SIT` | `reset-presit` | 清舊 Job/PVC，重啟 Postgres |
+| 3 | `Apply BDD Jobs` | `apply-bdd-jobs` | `kubectl apply 30-bdd-jobs.yaml` |
+| 4 | `Wait Phase 1–4` | `wait-phase4` | Polling Phase 4 Job 狀態 |
+| 5 | `Read Decision` | `read-decision` | 解析 Phase 4 logs GO/NO-GO |
+| 6 | `Check SIT State` | `check-sit-state` | 顯示 SIT Deployment image |
+
+Jenkins Pipeline 詳細安裝與操作說明見 [§7.5](#75-v23-stage-cjenkins-cicd-自動化-在-kind-內)；Argo Workflows 版本見 `main` 分支 [§7.11](https://github.com/ChunPingWang/pre-site-tutorial/blob/main/README.md#711-v23-argo-workflows取代-jenkins)。
 
 ---
 
