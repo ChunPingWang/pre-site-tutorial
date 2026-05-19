@@ -33,6 +33,12 @@ public class DatabaseLayerSteps {
 
     @BeforeAll
     public static void startPostgres() {
+        // TC 僅在 Phase 1（有 Docker 環境）時啟動；
+        // Phase 2-4 job 沒有掛載 Docker socket，跳過以避免 IllegalStateException。
+        if (!isDockerAvailable()) {
+            System.out.println("[Pre-SIT TC] Docker 不可用，TC PostgreSQL 已跳過（Phase 2-4 模式）");
+            return;
+        }
         postgres = new PostgreSQLContainer<>("postgres:16-alpine")
                 .withDatabaseName("petclinic")
                 .withUsername("petclinic")
@@ -46,6 +52,14 @@ public class DatabaseLayerSteps {
         if (postgres != null && postgres.isRunning()) {
             postgres.stop();
         }
+    }
+
+    private static boolean isDockerAvailable() {
+        // 優先檢查 DOCKER_HOST env（DinD 模式會設定）
+        String dockerHost = System.getenv("DOCKER_HOST");
+        if (dockerHost != null && !dockerHost.isBlank()) return true;
+        // 其次檢查預設 Unix socket
+        return new java.io.File("/var/run/docker.sock").exists();
     }
 
     private static void runFlyway() {
@@ -70,12 +84,30 @@ public class DatabaseLayerSteps {
     private final List<Map<String, String>> lastRows = new ArrayList<>();
     private int lastInsertedId = -1;
 
+    private final String dbHost     = System.getenv().getOrDefault("DB_HOST",     "localhost");
+    private final String dbPort     = System.getenv().getOrDefault("DB_PORT",     "5432");
+    private final String dbName     = System.getenv().getOrDefault("DB_NAME",     "petclinic");
+    private final String dbUser     = System.getenv().getOrDefault("DB_USER",     "petclinic");
+    private final String dbPassword = System.getenv().getOrDefault("DB_PASSWORD", "petclinic");
+
     @Before("@database")
     public void setupConnection() throws SQLException {
-        connection = DriverManager.getConnection(
-                postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+        String url;
+        String user, password;
+        if (postgres != null && postgres.isRunning()) {
+            // Phase 1：TC 管理的 PostgreSQL
+            url      = postgres.getJdbcUrl();
+            user     = postgres.getUsername();
+            password = postgres.getPassword();
+        } else {
+            // Phase 2-4：連線至 K8s postgres Service（env vars 同 v2.2）
+            url      = String.format("jdbc:postgresql://%s:%s/%s", dbHost, dbPort, dbName);
+            user     = dbUser;
+            password = dbPassword;
+        }
+        connection = DriverManager.getConnection(url, user, password);
         connection.setAutoCommit(true);
-        System.out.printf("[Pre-SIT TC] DB 連線成功: %s%n", postgres.getJdbcUrl());
+        System.out.printf("[Pre-SIT TC] DB 連線成功: %s%n", url);
     }
 
     @After("@database")
