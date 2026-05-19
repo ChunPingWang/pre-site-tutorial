@@ -20,14 +20,14 @@
 7. [Quick Start（從零跑起 PoC）](#7-quick-start從零跑起-poc)
    - [7.1 先決條件](#71-先決條件)
    - [7.2 五個指令跑完整 PoC（v2.1）](#72-五個指令跑完整-poc)
-   - [7.5 v2.3 Argo Workflows CI/CD](#75-v23-stage-cargo-workflows-cicd-自動化在-kind-內)
-   - [7.6 v2.3 Observability](#76-v23-observabilityprometheus--grafana--loki)
-   - [7.7 v2.3 Sealed Secrets](#77-v23-sealed-secrets消除-git-明文密碼)
-   - [7.8 v2.3 Per-user SIT Namespace](#78-v23-per-user-sit-namespace每位測試人員獨立沙盒)
-   - [7.9 v2.3 完整環境 Quick Start ⭐](#79-v23-完整環境-quick-start)
-   - [7.10 v2.3 Postgres PVC Snapshot / Restore](#710-v23-postgres-pvc-snapshot--restore)
-   - [7.11 v2.3 Argo Workflows：取代 Jenkins](#711-v23-argo-workflows取代-jenkins)
-   - [7.12 v2.3 Gherkin Editor：瀏覽器管理測試案例](#712-v23-gherkin-editor瀏覽器管理測試案例)
+   - [7.5 Argo Workflows CI/CD](#75-stage-cargo-workflows-cicd-自動化在-kind-內)
+   - [7.6 Observability](#76-observabilityprometheus--grafana--loki)
+   - [7.7 Sealed Secrets](#77-sealed-secrets消除-git-明文密碼)
+   - [7.8 Per-user SIT Namespace](#78-per-user-sit-namespace每位測試人員獨立沙盒)
+   - [7.9 完整環境 Quick Start ⭐](#79-完整環境-quick-start)
+   - [7.10 Postgres PVC Snapshot / Restore](#710-postgres-pvc-snapshot--restore)
+   - [7.11 Argo Workflows：取代 Jenkins](#711-argo-workflows取代-jenkins)
+   - [7.12 Gherkin Editor：瀏覽器管理測試案例](#712-gherkin-editor瀏覽器管理測試案例)
    - [7.13 Testcontainers 在 Kind 中的完整機制](#713-testcontainers-在-kind-中的完整機制)
 8. [目錄結構說明](#8-目錄結構說明)
 9. [常見問題（FAQ）](#9-常見問題faq)
@@ -112,7 +112,7 @@ graph LR
         P1[Pre-SIT_Work_Plan_v2.md<br/>v2.0 原始版]
         P2[Pre-SIT_Work_Plan_v2.1.md<br/>v2.1 PoC 校準版]
         P3[Pre-SIT_Work_Plan_v2.2.md<br/>v2.2 雙環境架構 ⭐]
-        P4[README.md §7<br/>v2.3 功能延伸文件 ⭐⭐]
+        P4[README.md §7<br/>功能延伸文件 ⭐⭐]
     end
 
     subgraph 教學文件
@@ -156,7 +156,7 @@ graph LR
 |------|------|--------|
 | **`README.md`** ⭐ (本檔) | 入口與全貌 | 第一次接觸時 |
 | **[`Pre-SIT_Work_Plan_v2.2.md`](Pre-SIT_Work_Plan_v2.2.md)** ⭐ | **最新正式計畫書（v2.2，雙環境 + vendor PetClinic + Flyway + Ingress）** | 規劃 / 驗收 / 新加入專案 |
-| **`README.md §7.5–§7.13`**（本檔） ⭐⭐ | **v2.3 功能延伸：Argo Workflows CI/CD、Observability、Sealed Secrets、Per-user SIT、PVC Snapshot、Gherkin Editor、Testcontainers 機制** | 了解 v2.3 新功能 |
+| **`README.md §7.5–§7.13`**（本檔） ⭐⭐ | **功能延伸：Argo Workflows CI/CD、Observability、Sealed Secrets、Per-user SIT、PVC Snapshot、Gherkin Editor、Testcontainers 機制** | 了解 新功能 |
 | [`Pre-SIT_Work_Plan_v2.1.md`](Pre-SIT_Work_Plan_v2.1.md) | 上一代計畫書（v2.1，plan-faithful + upstream-as-is，PoC 已達 100% GO） | 對照 v2.1 → v2.2 的架構轉向 |
 | [`Pre-SIT_Work_Plan_v2.md`](Pre-SIT_Work_Plan_v2.md) | v2.0 原始版（最初版本） | 想完整理解版本演進 |
 | **[`Pre-SIT_Gherkin_to_Script_Guide.md`](Pre-SIT_Gherkin_to_Script_Guide.md)** | Gherkin ↔ Java step 對應教學 | 寫測試前 |
@@ -171,7 +171,7 @@ graph LR
 | 第一次接觸這個專案、想快速理解全貌 | **README.md**（本檔） |
 | 要新組織導入、要寫提案 / 要簽核 | **v2.2**（雙環境、vendored source、完整 CI/CD） |
 | 已經有 v2.1 PoC、想知道升級路徑 | **v2.2 §10**「v2.1 → v2.2 變更對照」 |
-| 想了解 v2.3 新功能（Argo Workflows / Observability / Sealed Secrets / Testcontainers） | **README.md §7.5–§7.13** |
+| 想了解 新功能（Argo Workflows / Observability / Sealed Secrets / Testcontainers） | **README.md §7.5–§7.13** |
 | 想用最少資源跑通一個 demo | **v2.1** + `presit-bdd-demo/poc/`（已可跑、100% GO） |
 | 學術 / 教學 / 想了解設計演進 | 依序 v2.0 → v2.1 → v2.2 → v2.3（README §7） |
 
@@ -871,7 +871,7 @@ REPORT_DIR=$(pwd)/reports \
 mvn test -P phase-1   # 或 phase-2 / phase-3 / phase-4
 ```
 
-### 7.5 v2.3 Stage C：Argo Workflows CI/CD 自動化（在 Kind 內）
+### 7.5 Stage C：Argo Workflows CI/CD 自動化（在 Kind 內）
 
 Argo Workflows 作為 Pre-SIT 的 CI/CD Orchestrator，部署在同一個 Kind 叢集，透過 `WorkflowTemplate` 定義 7 個步驟的 Pipeline，以 in-cluster kubectl 操作 pre-sit / sit namespace。
 
@@ -920,7 +920,7 @@ EOF
 | 6 | read-decision | 解析 phase4 logs 中的 JSON decision 欄位 | `"decision":"GO ✅"` |
 | 7 | check-sit-state | 顯示 SIT namespace 4 個 deployment 的現行 image | `:sit-approved` |
 
-### 7.6 v2.3 Observability：Prometheus + Grafana + Loki
+### 7.6 Observability：Prometheus + Grafana + Loki
 
 集中觀測 pre-sit 和 SIT 兩個環境的 metrics 與 logs，無需 kubectl exec 就能看到服務健康狀態。
 
@@ -990,7 +990,7 @@ print(f'{sum(1 for x in t if x[\"health\"]==\"up\")}/{len(t)} petclinic targets 
 # 預期輸出: 8/8 petclinic targets up
 ```
 
-### 7.7 v2.3 Sealed Secrets：消除 Git 明文密碼
+### 7.7 Sealed Secrets：消除 Git 明文密碼
 
 `manifests/pre-sit/05-config.yaml` 和 `manifests/sit/05-config.yaml` 原先直接包含明文 `POSTGRES_PASSWORD`。v2.3 改用 Bitnami Sealed Secrets，讓密碼以非對稱加密後的密文存入 Git，只有 cluster 內的 controller 能解封。
 
@@ -1055,7 +1055,7 @@ kubectl get secret petclinic-db-credentials -n pre-sit \
 # 預期: petclinic
 ```
 
-### 7.8 v2.3 Per-user SIT Namespace：每位測試人員獨立沙盒
+### 7.8 Per-user SIT Namespace：每位測試人員獨立沙盒
 
 > **這是 SIT（System Integration Testing）環境的功能，不是 Pre-SIT。**
 > Pre-SIT 由自動化 BDD 管道驗證，通過後的版本才 promote 到 SIT。
@@ -1217,7 +1217,7 @@ manifests/
 
 ---
 
-### 7.9 v2.3 完整環境 Quick Start
+### 7.9 完整環境 Quick Start
 
 v2.1/v2.2 的 §7.2「五個指令」只建立 Pre-SIT PoC。本節提供 **v2.3 全棧 Quick Start**：從 Kind 空叢集到 Jenkins + Observability + Sealed Secrets + Per-user SIT 全部就緒，一個腳本搞定。
 
@@ -1340,7 +1340,7 @@ scripts/create-sit-user.sh alice
 
 ---
 
-### 7.10 v2.3 Postgres PVC Snapshot / Restore
+### 7.10 Postgres PVC Snapshot / Restore
 
 SIT 資料會隨測試累積。快照功能讓測試人員在「已知良好狀態」做完快照，測試後隨時還原，不需重建整個 namespace。
 
@@ -1402,7 +1402,7 @@ curl -s -H 'Host: sit.local' http://localhost:30080/api/customer/owners | jq len
 
 ---
 
-### 7.11 v2.3 Argo Workflows：取代 Jenkins
+### 7.11 Argo Workflows：取代 Jenkins
 
 > **Branch 策略**：Jenkins 版本保存在 `v2.3-jenkins` 分支；`main` 分支使用 Argo Workflows。
 
@@ -1516,7 +1516,7 @@ api-gateway:         localhost:5000/petclinic-api-gateway:sit-approved
 > - `manifests/argo-workflows/30-ingress.yaml` — `argo.local` → `argo-server:2746`
 > - `scripts/setup-argo-workflows.sh` — 一鍵安裝
 
-### 7.12 v2.3 Gherkin Editor：瀏覽器管理測試案例
+### 7.12 Gherkin Editor：瀏覽器管理測試案例
 
 提供 Web UI，讓測試人員不需命令列即可：
 - **瀏覽 / 新增 / 編輯 / 刪除** `.feature` 檔案，修改後自動 commit + push 回 GitHub
@@ -1912,10 +1912,10 @@ mvn test -Dcucumber.filter.tags="@critical and not @known-issue"
 | 不要 Eureka，改用 K8s Service Discovery | 重 build api-gateway 改用 Spring Cloud Kubernetes |
 | 真正用 Postgres 而非 HSQLDB（**已實作**）| `petclinic-src/` 自行 build；`presit`/`sit` profile 均連線 PostgreSQL，無 HSQLDB |
 | ArgoCD 接真正的 Git | `argocd/petclinic-pre-sit.yaml` 改 `repoURL` |
-| CI/CD 整合（已實作 v2.3） | Argo Workflows 部署在 Kind 內；`manifests/argo-workflows/` + `WorkflowTemplate` 已就緒，見 [§7.5](#75-v23-stage-cargo-workflows-cicd-自動化在-kind-內) |
-| 觀測性（已實作 v2.3） | Prometheus + Grafana + Loki 已部署；`manifests/monitoring/` + `scripts/setup-monitoring.sh`，見 [§7.6](#76-v23-observabilityprometheus--grafana--loki) |
-| 明文密碼消除（已實作 v2.3） | Sealed Secrets controller 替換明文 Secret；`manifests/sealed-secrets/` + `06-sealed-db-credentials.yaml`，見 [§7.7](#77-v23-sealed-secrets消除-git-明文密碼) |
-| 多人共用 SIT 資料互污（已實作 v2.3） | 一行指令建立隔離 namespace；`scripts/create-sit-user.sh <username>`，見 [§7.8](#78-v23-per-user-sit-namespace每位測試人員獨立沙盒) |
+| CI/CD 整合（已實作 v2.3） | Argo Workflows 部署在 Kind 內；`manifests/argo-workflows/` + `WorkflowTemplate` 已就緒，見 [§7.5](#75-stage-cargo-workflows-cicd-自動化在-kind-內) |
+| 觀測性（已實作 v2.3） | Prometheus + Grafana + Loki 已部署；`manifests/monitoring/` + `scripts/setup-monitoring.sh`，見 [§7.6](#76-observabilityprometheus--grafana--loki) |
+| 明文密碼消除（已實作 v2.3） | Sealed Secrets controller 替換明文 Secret；`manifests/sealed-secrets/` + `06-sealed-db-credentials.yaml`，見 [§7.7](#77-sealed-secrets消除-git-明文密碼) |
+| 多人共用 SIT 資料互污（已實作 v2.3） | 一行指令建立隔離 namespace；`scripts/create-sit-user.sh <username>`，見 [§7.8](#78-per-user-sit-namespace每位測試人員獨立沙盒) |
 
 ---
 
