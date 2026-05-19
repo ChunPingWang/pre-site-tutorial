@@ -328,7 +328,7 @@ graph TB
 
     GIT[(Git Repository<br/>features + step + manifests)]
     SIT[(SIT 環境<br/>下游)]
-    REG[(Docker Hub<br/>upstream images)]
+    REG[(本地 Registry<br/>localhost:5000)]
 
     BA -- 撰寫/閱讀 Gherkin 場景 --> SYS
     DEV -- 實作 Step Definition --> SYS
@@ -337,7 +337,7 @@ graph TB
 
     SYS -- Webhook 觸發 --> GIT
     SYS -- 通過則部署 --> SIT
-    SYS -- pull PetClinic images --> REG
+    SYS -- build & push images --> REG
 
     style SYS fill:#1168bd,color:#fff,stroke:#0b4884,stroke-width:2px
 ```
@@ -1745,13 +1745,18 @@ pre-site-tutorial/
 
 ## 9. 常見問題（FAQ）
 
-### Q1：為何 Phase 1 用 Postgres、Phase 2/3/4 用 HSQLDB？這不矛盾嗎？
+### Q1：Phase 1 直接測 DB Schema、Phase 2–4 透過 REST API 測 App，有什麼差異？
 
-A：因為 upstream PetClinic image 不支援 `postgres` profile。在「不重 build upstream」前提下，Phase 1 獨立驗證「容器化 DB schema 是否能正確 reproduce」，Phase 2/3/4 驗證「應用本身是否健康可用」。詳見 [§3.3](#33-兩個環境兩個獨立資料庫) 與 [`Pre-SIT_Work_Plan_v2.1.md §1.3 C1`](Pre-SIT_Work_Plan_v2.1.md)。
+A：本專案**自行 build** PetClinic 微服務（`petclinic-src/`），以自訂的 `presit` Spring profile 連線 PostgreSQL（`jdbc:postgresql://...?currentSchema=<schema>`）；**並非使用 upstream 的 HSQLDB 預設值**。
+
+- **Phase 1**（Testcontainers 版）：BDD 以 Testcontainers 在 JVM 內啟動 DinD 管理的 ephemeral PostgreSQL，直接透過 JDBC 驗證三個 schema（`customers_schema`、`vets_schema`、`visits_schema`）的 DDL 與種子資料。不依賴任何 K8s 資源，每次 `@BeforeAll` 就是全新的 DB。
+- **Phase 2–4**：BDD 透過 PetClinic REST API 驗證應用層行為（服務健康、DB 連線、API 回應）；PetClinic 以 `presit` profile 連線 K8s PostgreSQL StatefulSet。
+
+兩個驗證層次互補：Phase 1 保證「DB schema 正確」，Phase 2–4 保證「App 在此 schema 上能正常運作」。詳見 [§3.3](#33-兩個環境兩個獨立資料庫)。
 
 ### Q2：Phase 2 記憶體門檻為何從 512 改 768 MB？
 
-A：Spring Boot 3.2 + Spring Cloud Config + Eureka client 啟動穩態約 500–530 MiB，即使設定 `-Xmx200m -XX:MaxMetaspaceSize=160m` 也無法降到 512 以下（Metaspace + Direct Memory + Netty buffers）。v2.0 plan 寫 < 512 MB 在 upstream image 下無法達成，v2.1 已改為 768 MB。詳見 [`POC_RESULTS.md §4 F1/F2`](presit-bdd-demo/poc/POC_RESULTS.md)。
+A：Spring Boot 3.2 + Spring Cloud Config + Eureka client 啟動穩態約 500–530 MiB，即使設定 `-Xmx200m -XX:MaxMetaspaceSize=160m` 也無法降到 512 以下（Metaspace + Direct Memory + Netty buffers）。v2.0 plan 寫 < 512 MB 在實測中無法達成，v2.1 已改為 768 MB。詳見 [`POC_RESULTS.md §4 F1/F2`](presit-bdd-demo/poc/POC_RESULTS.md)。
 
 ### Q3：為何 Phase 3 有一個場景被標 `@known-issue`？
 
@@ -1775,7 +1780,7 @@ mvn test -Dcucumber.filter.tags="@critical and not @known-issue"
 | 不用 Kind 用真正 K8s | `kind/up.sh` → 換成 Helm chart 或 Terraform |
 | 不用 localhost:5000 用 Harbor / ECR | 改 `manifests/40-microservices.yaml` 與 BDD Dockerfile 的 image 路徑 |
 | 不要 Eureka，改用 K8s Service Discovery | 重 build api-gateway 改用 Spring Cloud Kubernetes |
-| 真正用 Postgres 而非 HSQLDB | 重 build PetClinic 服務、加入 postgres profile |
+| 真正用 Postgres 而非 HSQLDB（**已實作**）| `petclinic-src/` 自行 build；`presit`/`sit` profile 均連線 PostgreSQL，無 HSQLDB |
 | ArgoCD 接真正的 Git | `argocd/petclinic-pre-sit.yaml` 改 `repoURL` |
 | CI/CD 整合（已實作 v2.3） | Argo Workflows 部署在 Kind 內；`manifests/argo-workflows/` + `WorkflowTemplate` 已就緒，見 [§7.5](#75-v23-stage-cargo-workflows-cicd-自動化在-kind-內) |
 | 觀測性（已實作 v2.3） | Prometheus + Grafana + Loki 已部署；`manifests/monitoring/` + `scripts/setup-monitoring.sh`，見 [§7.6](#76-v23-observabilityprometheus--grafana--loki) |
