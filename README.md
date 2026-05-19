@@ -5,6 +5,9 @@
 [![PoC 結果](https://img.shields.io/badge/PoC-100%25%20%E9%80%9A%E9%81%8E-brightgreen)]()
 [![決策](https://img.shields.io/badge/%E6%B1%BA%E7%AD%96-GO%20%E2%9C%85-brightgreen)]()
 [![語言](https://img.shields.io/badge/Gherkin-zh--TW-blue)]()
+[![分支](https://img.shields.io/badge/分支-gcp--deployment-orange)]()
+
+> **本分支（`gcp-deployment`）** 是 `main`（Argo Workflows）的延伸，額外包含 §7.13 GKE 部署腳本（`scripts/setup-gcp.sh`）。如只需 Argo Workflows on Kind，請切換至 `main`；如需 Jenkins 替代方案，請切換至 `v2.3-jenkins`。
 
 ---
 
