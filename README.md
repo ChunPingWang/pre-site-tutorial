@@ -28,6 +28,7 @@
    - [7.10 v2.3 Postgres PVC Snapshot / Restore](#710-v23-postgres-pvc-snapshot--restore)
    - [7.11 v2.3 Argo Workflows：取代 Jenkins](#711-v23-argo-workflows取代-jenkins)
    - [7.12 v2.3 Gherkin Editor：瀏覽器管理測試案例](#712-v23-gherkin-editor瀏覽器管理測試案例)
+   - [7.13 Testcontainers 在 Kind 中的完整機制](#713-testcontainers-在-kind-中的完整機制)
 8. [目錄結構說明](#8-目錄結構說明)
 9. [常見問題（FAQ）](#9-常見問題faq)
 10. [延伸學習路徑](#10-延伸學習路徑)
@@ -1629,6 +1630,135 @@ echo "127.0.0.1 presit-editor.local" | sudo tee -a /etc/hosts
 - `presit-editor/static/` — 前端 HTML / JS / CSS
 - `manifests/presit-editor/` — K8s YAML（RBAC、Deployment、Service、Ingress）
 - `scripts/setup-presit-editor.sh` — 一鍵安裝腳本
+
+---
+
+### 7.13 Testcontainers 在 Kind 中的完整機制
+
+> 本節說明 `testcontainers` 分支特有的 Phase 1 DB 管理方式，以及它如何在 Kind（containerd）環境中正確運作。
+
+#### 7.13.1 JVM 生命週期：`@BeforeAll` → 場景 → `@AfterAll`
+
+Testcontainers 把 PostgreSQL 的生命週期**綁進測試 JVM**，不依賴任何外部 K8s 資源：
+
+```
+mvn test -P phase-1
+    │
+    ▼  [靜態，整個 JVM 只執行一次]
+@BeforeAll startPostgres()
+    ├─ isDockerAvailable()？
+    │   ├─ YES（有 DOCKER_HOST 或 /var/run/docker.sock）
+    │   │   ├─ new PostgreSQLContainer<>("postgres:16-alpine").start()
+    │   │   │   └─ TC 向 Docker daemon 拉 image、啟動容器、等 5432 port 就緒
+    │   │   └─ runFlyway()
+    │   │       ├─ customers_schema → V1__create_tables.sql + V2__seed_data.sql
+    │   │       ├─ vets_schema      → V1 + V2
+    │   │       └─ visits_schema    → V1 + V2
+    │   └─ NO → 靜默跳過（Phase 2-4 job 走此路徑）
+    │
+    ▼  [每個 @database 場景前]
+@Before("@database") setupConnection()
+    ├─ postgres.isRunning() → 用 TC 動態 JDBC URL（e.g. jdbc:postgresql://localhost:55432/petclinic）
+    └─ 否則 → 用環境變數 DB_HOST/DB_PORT（Phase 2-4 fallback）
+    │
+    ▼  [Cucumber 執行每個場景的步驟]
+    │
+    ▼  [每個場景結束後]
+@After("@database") teardownConnection()
+    │
+    ▼  [整個 JVM 結束前，靜態]
+@AfterAll stopPostgres()
+    └─ postgres.stop() → 容器刪除、port 釋放、資料消滅
+```
+
+**關鍵特性**：每次 `mvn test` 都從 Flyway 遷移的全新狀態出發，無需手動重置，也不受前次測試的資料污染。
+
+#### 7.13.2 為何 Phase 2–4 不會意外觸發 TC 啟動
+
+Cucumber 在一個 JVM 中執行時，**所有 Step Definition 類別都會被載入**，包括 `DatabaseLayerSteps`。即使跑的是 `phase-2` profile（只選 `@phase-2` 場景），`@BeforeAll` 仍然會被 JUnit 5 呼叫。
+
+`isDockerAvailable()` 是防止誤啟動的 guard：
+
+```java
+private static boolean isDockerAvailable() {
+    String dockerHost = System.getenv("DOCKER_HOST");
+    if (dockerHost != null && !dockerHost.isBlank()) return true;
+    return new java.io.File("/var/run/docker.sock").exists();
+}
+```
+
+| Job | `DOCKER_HOST` env | `/var/run/docker.sock` | isDockerAvailable() | 結果 |
+|---|---|---|---|---|
+| `presit-phase1-database` | `unix:///var/run/docker.sock`（DinD emptyDir）| 存在 | `true` | TC 啟動 |
+| `presit-phase2-application` | 無 | 不存在 | `false` | 靜默跳過 |
+| `presit-phase3-integration` | 無 | 不存在 | `false` | 靜默跳過 |
+| `presit-phase4-e2e-decision` | 無 | 不存在 | `false` | 靜默跳過 |
+
+#### 7.13.3 為何需要 DinD Sidecar
+
+Kind 節點使用 **containerd** 作為 CRI，節點內部**沒有 Docker daemon**，`/var/run/docker.sock` 不存在。直接掛載 hostPath 會得到：
+
+```
+MountVolume.SetUp failed: /var/run/docker.sock is not a socket file
+```
+
+解法：在 Phase 1 Job 中加入 `docker:27-dind` sidecar，與 bdd-runner 共享一個 `emptyDir` volume（掛載到 `/var/run`）。DinD 在 pod 內的共享 network namespace 中啟動自己的 dockerd，bdd-runner 透過 `unix:///var/run/docker.sock` 連線。
+
+```yaml
+volumes:
+- name: docker-sock
+  emptyDir: {}          # 共享 docker.sock 與 termination file
+
+containers:
+- name: dind
+  image: docker:27-dind
+  securityContext: { privileged: true }
+  env:
+  - { name: DOCKER_TLS_CERTDIR, value: "" }
+  volumeMounts:
+  - { name: docker-sock, mountPath: /var/run }
+
+- name: bdd-runner
+  env:
+  - { name: DOCKER_HOST,                  value: "unix:///var/run/docker.sock" }
+  - { name: TESTCONTAINERS_HOST_OVERRIDE, value: "localhost" }
+  - { name: TESTCONTAINERS_RYUK_DISABLED, value: "true" }
+  volumeMounts:
+  - { name: docker-sock, mountPath: /var/run }
+```
+
+#### 7.13.4 三個環境變數的作用
+
+| 環境變數 | 值 | 原因 |
+|---|---|---|
+| `DOCKER_HOST` | `unix:///var/run/docker.sock` | 指向 DinD 的 socket（emptyDir 掛載，非 hostPath）|
+| `TESTCONTAINERS_HOST_OVERRIDE` | `localhost` | DinD 把 TC 容器 port 映射到 `0.0.0.0`，在 pod 共享 netns 中以 `localhost:<port>` 可達 |
+| `TESTCONTAINERS_RYUK_DISABLED` | `true` | Ryuk resource reaper 需要 privileged，K8s Job 中停用 |
+
+#### 7.13.5 Termination File Pattern（解決 Job 永不結束）
+
+K8s Job 需要**所有容器都退出**才算 Complete。DinD 的 dockerd 是常駐 daemon，不會自動退出，導致 Job 永久卡在 `Running 1/2`。
+
+解法：用 `/var/run/presit-done` 這個 termination file 做跨容器溝通：
+
+```
+bdd-runner:                          dind:
+  mvn test -P phase-1                  dockerd-entrypoint.sh &
+  RC=$?                                DIND_PID=$!
+  touch /var/run/presit-done   ──→     until [ -f /var/run/presit-done ]
+  exit $RC                             do sleep 2; done
+                                       kill $DIND_PID
+                                       wait $DIND_PID
+                                       exit 0
+```
+
+兩個容器都退出後，K8s Job 狀態變為 `Complete 1/1`，Argo Workflows 繼續執行下一個 step。
+
+#### 相關檔案
+
+- `presit-bdd-demo/poc-v2.3-tc/src/test/java/com/presit/steps/DatabaseLayerSteps.java` — TC 生命週期與 guard 邏輯
+- `manifests/pre-sit-tc/30-bdd-jobs.yaml` — DinD sidecar + emptyDir + termination file 完整 manifest
+- `manifests/argo-workflows/20-workflow-template-tc.yaml` — TC 版 WorkflowTemplate
 
 ---
 
