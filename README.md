@@ -156,7 +156,7 @@ graph LR
 |------|------|--------|
 | **`README.md`** ⭐ (本檔) | 入口與全貌 | 第一次接觸時 |
 | **[`Pre-SIT_Work_Plan_v2.2.md`](Pre-SIT_Work_Plan_v2.2.md)** ⭐ | **最新正式計畫書（v2.2，雙環境 + vendor PetClinic + Flyway + Ingress）** | 規劃 / 驗收 / 新加入專案 |
-| **`README.md §7.5–§7.11`**（本檔） ⭐⭐ | **v2.3 功能延伸：Argo Workflows CI/CD、Observability、Sealed Secrets、Per-user SIT、PVC Snapshot** | 了解 v2.3 新功能 |
+| **`README.md §7.5–§7.13`**（本檔） ⭐⭐ | **v2.3 功能延伸：Argo Workflows CI/CD、Observability、Sealed Secrets、Per-user SIT、PVC Snapshot、Gherkin Editor、GCP 部署** | 了解 v2.3 新功能 |
 | [`Pre-SIT_Work_Plan_v2.1.md`](Pre-SIT_Work_Plan_v2.1.md) | 上一代計畫書（v2.1，plan-faithful + upstream-as-is，PoC 已達 100% GO） | 對照 v2.1 → v2.2 的架構轉向 |
 | [`Pre-SIT_Work_Plan_v2.md`](Pre-SIT_Work_Plan_v2.md) | v2.0 原始版（最初版本） | 想完整理解版本演進 |
 | **[`Pre-SIT_Gherkin_to_Script_Guide.md`](Pre-SIT_Gherkin_to_Script_Guide.md)** | Gherkin ↔ Java step 對應教學 | 寫測試前 |
@@ -171,7 +171,7 @@ graph LR
 | 第一次接觸這個專案、想快速理解全貌 | **README.md**（本檔） |
 | 要新組織導入、要寫提案 / 要簽核 | **v2.2**（雙環境、vendored source、完整 CI/CD） |
 | 已經有 v2.1 PoC、想知道升級路徑 | **v2.2 §10**「v2.1 → v2.2 變更對照」 |
-| 想了解 v2.3 新功能（Argo Workflows / Observability / Sealed Secrets） | **README.md §7.5–§7.11** |
+| 想了解 v2.3 新功能（Argo Workflows / Observability / Sealed Secrets / GCP 部署） | **README.md §7.5–§7.13** |
 | 想用最少資源跑通一個 demo | **v2.1** + `presit-bdd-demo/poc/`（已可跑、100% GO） |
 | 學術 / 教學 / 想了解設計演進 | 依序 v2.0 → v2.1 → v2.2 → v2.3（README §7） |
 
