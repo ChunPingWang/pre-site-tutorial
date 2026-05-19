@@ -416,6 +416,68 @@ reports/
 
 ---
 
+## 附錄 C：Gherkin → Step Definition 是手動契約，不是自動產生
+
+### C.1 常見誤解
+
+> 「Cucumber 會自動把 Gherkin 場景轉成測試程式碼嗎？」
+
+**不會。** Gherkin `.feature` 檔案是**規格文件**，Step Definition `.java` 檔案是**規格的實作**。
+兩者之間的對應關係是**開發者手動維護的契約**。
+
+Cucumber 框架在**執行時期**做的唯一一件事是：
+把每一行 step 文字，用 annotation 裡的 expression 做 regex 比對，找到對應的 Java 方法並呼叫。
+
+```
+.feature 檔（人寫）              Step Definition（人寫）           Cucumber（執行時自動）
+────────────────────             ──────────────────────────        ─────────────────────
+  當 我查詢 schema "vets_schema"   @當("我查詢 schema {string}")    ← regex 比對 step 文字
+  的表清單                         public void querySchemaTables(   ← 呼叫此方法
+                                       String schema) { ... }
+```
+
+### C.2 如果 Step 沒有對應的方法
+
+Cucumber 會拋出 **`Undefined step`** 錯誤，場景狀態為 `UNDEFINED`（不是 FAIL，是根本沒執行）：
+
+```
+Undefined step: 當 我查詢 schema "vets_schema" 的表清單
+You can implement this step using the snippet(s) below:
+
+@當("我查詢 schema {string} 的表清單")
+public void 我查詢Schema的表清單(String string) {
+    // Write code here that turns the phrase above into concrete actions
+    throw new io.cucumber.java.PendingException();
+}
+```
+
+Cucumber 可以**產生空的 stub**（只有方法簽名），但 stub 裡的 `throw new PendingException()` 必須由開發者替換成真正的邏輯。**程式邏輯不會自動產生。**
+
+### C.3 維護契約的三條規則
+
+| 規則 | 說明 |
+|---|---|
+| **Step 文字改變 → annotation 必須同步改** | feature 改了措辭，Java 的 `@當("...")` 要跟著改，否則 `Undefined step` |
+| **一個 step 對應一個方法** | 同樣的 step 文字不能有兩個 annotation 完全相同的方法（Cucumber 會報 ambiguous） |
+| **DataTable / DocString 型別必須手動宣告** | `DataTable`、`String`（DocString）等參數型別，開發者要在方法簽名上明確宣告 |
+
+### C.4 本專案的分工實踐
+
+```
+BA / QA                    Developer
+─────────────────          ──────────────────────────────────────────
+撰寫/修改 .feature 檔      看 BA 新增的 step，判斷是否需要新增方法：
+                             ├── 已有相同 annotation → 直接復用
+                             ├── 新 step → 寫新方法（JDBC / HTTP / kubectl）
+                             └── step 改措辭 → 更新 annotation 裡的 expression
+```
+
+**關鍵點**：BA 可以獨立修改 Gherkin 場景的**業務描述**（例如改期望數值、新增測試案例），
+但一旦**步驟文字本身改變**，就需要 Developer 同步更新 Step Definition。
+這是 BDD 工作流中 BA 與 Developer **協作邊界**所在。
+
+---
+
 ## 附錄 A：Gherkin 中文關鍵字速查
 
 | Gherkin 英文 | 中文 (zh-TW) | 用途 |
