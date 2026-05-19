@@ -223,14 +223,23 @@ graph LR
 
 ### 3.3 兩個環境、兩個獨立資料庫
 
-Pre-SIT 與 SIT 各自擁有獨立的 PostgreSQL StatefulSet，**完全不共用**：
+> **Testcontainers 版差異**：Phase 1 不再使用 K8s StatefulSet，改由 Testcontainers 在測試 JVM 內啟動一個 **DinD 管理的 PostgreSQL 容器**；Phase 2–4 仍使用 pre-sit namespace 的 PostgreSQL StatefulSet。
+
+Pre-SIT 與 SIT 各自擁有獨立的資料庫，**完全不共用**：
 
 ```mermaid
 flowchart LR
     subgraph PRE["pre-sit namespace（自動化測試）"]
-        PG1[(PostgreSQL\npre-sit)]
-        BDD[Phase 1–4\nBDD 自動化測試]
-        PG1 --> BDD
+        subgraph P1["Phase 1（Testcontainers）"]
+            TC[(PostgreSQL\nTC ephemeral\nDinD 管理)]
+            BDD1[Phase 1\nBDD 測試]
+            TC --> BDD1
+        end
+        subgraph P24["Phase 2–4（K8s）"]
+            PG1[(PostgreSQL\npre-sit\nStatefulSet)]
+            BDD24[Phase 2–4\nBDD 測試]
+            PG1 --> BDD24
+        end
     end
 
     subgraph SIT["sit namespace（正式驗收）"]
@@ -239,23 +248,29 @@ flowchart LR
         PG2 --> APP
     end
 
-    BDD -->|"GO ✅\npromote :sit-approved"| APP
+    BDD24 -->|"GO ✅\npromote :sit-approved"| APP
 
+    style TC fill:#fc9,stroke:#c60
     style PG1 fill:#9cf,stroke:#06c
     style PG2 fill:#9cf,stroke:#06c
     style PRE fill:#f0f4ff,stroke:#99b
     style SIT fill:#f0fff4,stroke:#9b9
+    style P1 fill:#fff8e8,stroke:#e90
+    style P24 fill:#e8f0ff,stroke:#66c
 ```
 
-| | pre-sit PostgreSQL | sit PostgreSQL |
-|---|---|---|
-| **用途** | 自動化測試專用 | 正式 SIT 驗收 |
-| **資料來源** | InitContainer 每次重建 schema + 種子資料 | 長期累積，BA/SA 手動維護 |
-| **生命週期** | 每次 pipeline 執行前重啟，從已知狀態出發 | 持久保留，可用 snapshot/restore 管理 |
-| **誰會寫入** | BDD Phase 1–4 自動測試 | BA/SA 探索測試、手動操作 |
-| **與對方的關係** | 完全隔離，絕不碰 sit DB | 只在 promote 後被動接收新版 App |
+| | Phase 1（TC）| Phase 2–4（K8s）| sit PostgreSQL |
+|---|---|---|---|
+| **用途** | 資料層 BDD 自動化測試 | 應用／整合／E2E 測試 | 正式 SIT 驗收 |
+| **資料來源** | Flyway via `@BeforeAll`（JVM 啟動時建立）| PetClinic App 啟動時執行 Flyway | 長期累積，BA/SA 手動維護 |
+| **生命週期** | JVM 生命週期（`@AfterAll` 時銷毀，比 pod 更短暫）| 每次 pipeline 執行前重啟，從已知狀態出發 | 持久保留，可用 snapshot/restore 管理 |
+| **誰會寫入** | Phase 1 BDD 自動測試 | Phase 2–4 BDD 自動測試 | BA/SA 探索測試、手動操作 |
+| **與對方的關係** | 完全隔離，不碰 K8s StatefulSet | 完全隔離，絕不碰 sit DB | 只在 promote 後被動接收新版 App |
 
-**關鍵意義**：Pre-SIT 的測試無論跑幾次、失敗幾次，都不會影響 SIT 的資料狀態。BA/SA 在 SIT 環境的測試資料始終由自己掌控，不會因為自動化測試而被污染或意外重置。
+**關鍵意義**：
+- **Phase 1**：PostgreSQL 隨 JVM 啟動而生、隨 `@AfterAll` 而滅，每次測試都從 Flyway 遷移的純淨狀態出發，無需手動重置，也不依賴任何 K8s 資源。
+- **Phase 2–4**：仍使用 K8s StatefulSet，保留原有的 DB 重啟機制（`reset-presit-tc` step），確保應用層與整合層測試的資料隔離。
+- Pre-SIT 無論跑幾次，都不會影響 SIT 的資料狀態。BA/SA 在 SIT 環境的測試資料始終由自己掌控。
 
 ### 3.4 Tag-based 場景分層
 
