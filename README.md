@@ -152,28 +152,30 @@ graph LR
     style P4 fill:#9f9,stroke:#060,stroke-width:3px
 ```
 
-| 文件 | 角色 | 何時讀 |
-|------|------|--------|
-| **`README.md`** ⭐ (本檔) | 入口與全貌 | 第一次接觸時 |
-| **[`Pre-SIT_Work_Plan_v2.2.md`](Pre-SIT_Work_Plan_v2.2.md)** ⭐ | **最新正式計畫書（v2.2，雙環境 + vendor PetClinic + Flyway + Ingress）** | 規劃 / 驗收 / 新加入專案 |
-| **`README.md §7.5–§7.13`**（本檔） ⭐⭐ | **功能延伸：Argo Workflows CI/CD、Observability、Sealed Secrets、Per-user SIT、PVC Snapshot、Gherkin Editor、GCP 部署** | 了解 新功能 |
-| [`Pre-SIT_Work_Plan_v2.1.md`](Pre-SIT_Work_Plan_v2.1.md) | 上一代計畫書（v2.1，plan-faithful + upstream-as-is，PoC 已達 100% GO） | 對照 v2.1 → v2.2 的架構轉向 |
-| [`Pre-SIT_Work_Plan_v2.md`](Pre-SIT_Work_Plan_v2.md) | v2.0 原始版（最初版本） | 想完整理解版本演進 |
-| **[`Pre-SIT_Gherkin_to_Script_Guide.md`](Pre-SIT_Gherkin_to_Script_Guide.md)** | Gherkin ↔ Java step 對應教學 | 寫測試前 |
-| **[`presit-bdd-demo/poc/POC_RESULTS.md`](presit-bdd-demo/poc/POC_RESULTS.md)** | v2.1 PoC 實跑成績、失敗 case 分析、A 路線修正 | 想知道「真的能跑嗎、會踩什麼雷」 |
-| [`presit-bdd-demo/docs/guide.md`](presit-bdd-demo/docs/guide.md) | v2.0 原始 demo 操作手冊 | 對照 v2.0 demo 版本 |
-| [`presit-bdd-demo/poc/`](presit-bdd-demo/poc/) | 可實際執行的 v2.1 PoC 程式碼 | 想跑或修改 v2.1 版 |
+| 文件 | 內容摘要 | 適合 |
+|------|---------|------|
+| **計畫書** | | |
+| **[`Pre-SIT_Work_Plan_v2.2.md`](Pre-SIT_Work_Plan_v2.2.md)** ⭐ | 最新架構規格：雙環境、自行 build PetClinic、PostgreSQL + Flyway | PM、架構師、新成員 |
+| [`Pre-SIT_Work_Plan_v2.1.md`](Pre-SIT_Work_Plan_v2.1.md) | v2.1 PoC 版（plan-faithful），已驗證 100% GO | 了解 v2.1 → v2.2 架構轉向 |
+| [`Pre-SIT_Work_Plan_v2.md`](Pre-SIT_Work_Plan_v2.md) | v2.0 原始提案版 | 追溯設計決策根源 |
+| **操作指南** | | |
+| **`README.md`（本檔）** ⭐ | 全貌導覽；§3–§6 設計原理；§7.1–§7.13 環境建置、CI/CD、Observability、GCP 部署等 | 所有角色 |
+| **[`Pre-SIT_Gherkin_to_Script_Guide.md`](Pre-SIT_Gherkin_to_Script_Guide.md)** | Gherkin ↔ Java step 對應原理、手動契約說明、各 Phase 範例 | Developer、QA |
+| [`presit-bdd-demo/docs/guide.md`](presit-bdd-demo/docs/guide.md) | v2.0 demo 操作手冊 | 對照舊版本 |
+| **PoC 驗證** | | |
+| **[`presit-bdd-demo/poc/POC_RESULTS.md`](presit-bdd-demo/poc/POC_RESULTS.md)** | v2.1 實跑成績、踩雷紀錄、修正建議 | 想確認可行性 |
+| [`presit-bdd-demo/poc/`](presit-bdd-demo/poc/) | v2.1 可執行程式碼（BDD、K8s YAML、ArgoCD） | 動手跑或修改 |
 
-### 2.1 三個計畫書版本的選擇指引
+### 2.1 依情境快速導向
 
-| 你的情境 | 看哪一份 |
-|----------|----------|
-| 第一次接觸這個專案、想快速理解全貌 | **README.md**（本檔） |
-| 要新組織導入、要寫提案 / 要簽核 | **v2.2**（雙環境、vendored source、完整 CI/CD） |
-| 已經有 v2.1 PoC、想知道升級路徑 | **v2.2 §10**「v2.1 → v2.2 變更對照」 |
-| 想了解 新功能（Argo Workflows / Observability / Sealed Secrets / GCP 部署） | **README.md §7.5–§7.13** |
-| 想用最少資源跑通一個 demo | **v2.1** + `presit-bdd-demo/poc/`（已可跑、100% GO） |
-| 學術 / 教學 / 想了解設計演進 | 依序 v2.0 → v2.1 → v2.2 → v2.3（README §7） |
+| 情境 | 建議文件 |
+|------|---------|
+| 第一次接觸，快速了解全貌 | **README.md**（本檔） |
+| 新組織導入、寫提案或報告 | **[v2.2](Pre-SIT_Work_Plan_v2.2.md)**（雙環境、完整 CI/CD） |
+| 已有 v2.1 PoC，找升級路徑 | **v2.2 §10**「v2.1 → v2.2 變更對照」 |
+| 了解 CI/CD、Observability、GCP 部署等功能 | **README.md §7.5–§7.13** |
+| 最少資源快速跑通 demo | **v2.1** + [`presit-bdd-demo/poc/`](presit-bdd-demo/poc/) |
+| 學術 / 教學 / 了解設計演進 | v2.0 → v2.1 → v2.2 → v2.3（README §7） |
 
 ---
 
