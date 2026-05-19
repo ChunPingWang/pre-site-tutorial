@@ -780,11 +780,13 @@ export PATH="$HOME/.local/bin:$PATH"
 
 ### 7.2 五個指令跑完整 PoC
 
+> **注意**：本節展示 v2.1 PoC 的最小啟動流程（`presit-bdd-demo/poc/`）。Jenkins 全棧 CI/CD（v2.3）請見 §7.5；Jenkins **不依賴** ArgoCD。
+
 ```bash
 # 1) Kind 集群 + 本地 registry
 ./presit-bdd-demo/poc/kind/up.sh
 
-# 2) ArgoCD
+# 2) ArgoCD（v2.1 PoC 使用；Jenkins CD 不需要，可略過）
 kubectl create namespace argocd
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.13.1/manifests/install.yaml
 kubectl -n argocd wait --for=condition=Available deployment --all --timeout=300s
@@ -835,15 +837,13 @@ mvn test -P phase-1   # 或 phase-2 / phase-3 / phase-4
 
 ### 7.5 Jenkins CI/CD 自動化（在 Kind 內）
 
-Jenkins 作為 Pre-SIT 的 CI/CD orchestrator，部署在同一個 Kind 叢集，透過 kubectl（in-cluster）觸發 BDD 鏈並讀取決策。
+Jenkins 作為 Pre-SIT 的 **完整 CI/CD orchestrator**，部署在同一個 Kind 叢集，透過 kubectl（in-cluster）：部署 pre-sit 環境 → 執行 BDD 鏈 → 讀決策 → Go 時直接 promote 相同 image 到 SIT。**不依賴 ArgoCD。**
 
-#### 前提：v2.2 雙環境已就緒
+#### 前提：Jenkins 可用 kubectl
 
 ```bash
-# 確認 ArgoCD 兩個 Application 存在
-kubectl -n argocd get application petclinic-pre-sit petclinic-sit
-# 確認 pre-sit namespace 有 BDD RBAC（一次性 setup）
-kubectl apply -f manifests/pre-sit/25-presit-sa.yaml
+# 確認 Jenkins ServiceAccount 有足夠 RBAC（一次性）
+kubectl apply -f manifests/jenkins/05-rbac.yaml
 ```
 
 #### 啟動 Jenkins
@@ -877,12 +877,16 @@ kubectl exec -n jenkins deploy/jenkins -- \
 
 | 階段 | 動作 | 預期輸出 |
 |------|------|---------|
-| Preflight | 驗 kubectl 可用、namespace 存在、ArgoCD apps 存在 | `kubectl v1.36+` |
-| Reset Pre-SIT | 清舊 jobs/PVC、重啟 postgres + deployments | `pod/postgres-0 condition met` |
+| Preflight | 驗 kubectl 可用、namespace 存在（不存在則待建立） | `kubectl v1.36+` |
+| Deploy Pre-SIT | `kubectl apply manifests/pre-sit/{00..25}` + 等 postgres + deployments ready | `deployment/.../available condition met` |
+| Reset Pre-SIT | 清舊 jobs/PVC、bounce postgres + rollout restart deployments | `pod/postgres-0 condition met` |
 | Apply BDD Jobs | `kubectl apply manifests/pre-sit/30-bdd-jobs.yaml` | 4 jobs created |
 | Wait Phase 1-4 | Polling 每 15 秒檢查 phase4 condition（支援 K8s 1.29+ `SuccessCriteriaMet`） | `Phase 4 done: SuccessCriteriaMet Complete` |
-| Read decision | 讀 phase4 logs，解析 JSON | `"decision":"GO ✅"` |
-| Check SIT state | 顯示 SIT 4 個 deployment 的現行 image | `:sit-approved` |
+| Read Decision | 讀 phase4 logs，解析 JSON，設 `PRESIT_RESULT=GO/NO-GO` | `"decision":"GO ✅"` |
+| Deploy SIT | （僅 GO）apply `manifests/sit/`，再 `kubectl set image` 將 pre-sit 的 image 促進到 SIT，等 rollout | `deployment/…  successfully rolled out` |
+| Check SIT State | 顯示 SIT 4 個 deployment 的現行 image | 與 pre-sit 相同 sha |
+
+> **Promote 機制**：`Deploy SIT` 從 pre-sit 讀取剛通過測試的 image（`kubectl get deployment … -o jsonpath=…`），以 `kubectl set image` 直接寫入 SIT，無需 docker retag 或 Argo Image Updater。
 
 #### 已知限制（v2.4 backlog）
 
@@ -1390,11 +1394,13 @@ curl -s -H 'Host: sit.local' http://localhost:30080/api/customer/owners | jq len
 | 順序 | Jenkins Stage | Argo WorkflowTemplate Step | 說明 |
 |------|--------------|---------------------------|------|
 | 1 | `Preflight` | `preflight` | 環境前置驗證 |
-| 2 | `Reset Pre-SIT` | `reset-presit` | 清舊 Job/PVC，重啟 Postgres |
-| 3 | `Apply BDD Jobs` | `apply-bdd-jobs` | `kubectl apply 30-bdd-jobs.yaml` |
-| 4 | `Wait Phase 1–4` | `wait-phase4` | Polling Phase 4 Job 狀態 |
-| 5 | `Read Decision` | `read-decision` | 解析 Phase 4 logs GO/NO-GO |
-| 6 | `Check SIT State` | `check-sit-state` | 顯示 SIT Deployment image |
+| 2 | `Deploy Pre-SIT` | —（Argo 假設 ArgoCD 已 sync） | `kubectl apply manifests/pre-sit/{00..25}` |
+| 3 | `Reset Pre-SIT` | `reset-presit` | 清舊 Job/PVC，重啟 Postgres |
+| 4 | `Apply BDD Jobs` | `apply-bdd-jobs` | `kubectl apply 30-bdd-jobs.yaml` |
+| 5 | `Wait Phase 1–4` | `wait-phase4` | Polling Phase 4 Job 狀態 |
+| 6 | `Read Decision` | `read-decision` | 解析 Phase 4 logs GO/NO-GO |
+| 7 | `Deploy SIT`（GO 時） | —（Argo 假設 Argo Image Updater 自動 promote） | `kubectl apply manifests/sit/ + set image` |
+| 8 | `Check SIT State` | `check-sit-state` | 顯示 SIT Deployment image |
 
 Jenkins Pipeline 詳細安裝與操作說明見 [§7.5](#75-jenkins-cicd-自動化在-kind-內)；Argo Workflows 版本見 `main` 分支 §7.11（Argo Workflows：取代 Jenkins）。
 
