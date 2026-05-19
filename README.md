@@ -5,6 +5,9 @@
 [![PoC 結果](https://img.shields.io/badge/PoC-100%25%20%E9%80%9A%E9%81%8E-brightgreen)]()
 [![決策](https://img.shields.io/badge/%E6%B1%BA%E7%AD%96-GO%20%E2%9C%85-brightgreen)]()
 [![語言](https://img.shields.io/badge/Gherkin-zh--TW-blue)]()
+[![分支](https://img.shields.io/badge/分支-testcontainers-purple)]()
+
+> **本分支（`testcontainers`）** 以 `main`（Argo Workflows）為基礎，**僅 Phase 1 改用 Testcontainers**（`presit-bdd-demo/poc-v2.3-tc/`）；Phase 2–4 與 Pipeline 編排仍沿用 Argo Workflows + K8s Job。詳見 §7.13。如需純 Argo Workflows 版本，請切換至 `main`。
 
 ---
 
