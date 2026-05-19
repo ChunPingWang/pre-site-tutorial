@@ -19,8 +19,8 @@
 6. [BDD 框架類別圖](#6-bdd-框架類別圖)
 7. [Quick Start（從零跑起 PoC）](#7-quick-start從零跑起-poc)
    - [7.1 先決條件](#71-先決條件)
-   - [7.2 五個指令跑完整 PoC（v2.1）](#72-五個指令跑完整-poc)
-   - [7.5 Argo Workflows CI/CD](#75-stage-cargo-workflows-cicd-自動化在-kind-內)
+   - [7.2 五個指令跑完整 PoC](#72-五個指令跑完整-poc)
+   - [7.5 Argo Workflows CI/CD](#75-argo-workflows-cicd-自動化在-kind-內)
    - [7.6 Observability](#76-observabilityprometheus--grafana--loki)
    - [7.7 Sealed Secrets](#77-sealed-secrets消除-git-明文密碼)
    - [7.8 Per-user SIT Namespace](#78-per-user-sit-namespace每位測試人員獨立沙盒)
@@ -108,46 +108,27 @@ graph LR
     R[README.md<br/>本檔 - 教學入口]
 
     subgraph 規劃文件
-        P1[Pre-SIT_Work_Plan_v2.md<br/>v2.0 原始版]
-        P2[Pre-SIT_Work_Plan_v2.1.md<br/>v2.1 PoC 校準版]
         P3[Pre-SIT_Work_Plan_v2.2.md<br/>v2.2 雙環境架構 ⭐]
         P4[README.md §7<br/>功能延伸文件 ⭐⭐]
     end
 
     subgraph 教學文件
         G[Pre-SIT_Gherkin_to_Script_Guide.md<br/>Gherkin → Java 對應指南]
-        DG[presit-bdd-demo/docs/guide.md<br/>demo 操作手冊]
     end
 
-    subgraph PoC 實作
-        PR[poc/POC_RESULTS.md<br/>v2.1 實跑結果 + 修正建議]
-        K[poc/kind/up.sh<br/>環境啟動]
-        SQL[poc/sql/<br/>DDL + DML]
-        M[poc/manifests/<br/>K8s YAML]
-        BDD[poc/bdd/<br/>BDD 專案]
-        A[poc/argocd/<br/>Application]
-        REP[poc/reports/<br/>cucumber 報告]
+    subgraph 現行實作
+        M[manifests/<br/>K8s YAML + Argo Workflows]
+        BDD[presit-bdd-demo/poc-v2.2/<br/>BDD 專案（可執行）]
     end
 
     R -->|理解現行架構| P3
-    P3 -.->|v2.3 延伸| P4
+    P3 -.->|功能延伸| P4
     R -->|理解語法| G
-    R -->|實際操作| K
-    P3 -.演進自.-> P2
-    P2 -.演進自.-> P1
-    P2 -.驗證來源.-> PR
-    G -->|延伸閱讀| DG
-    PR --> K
-    PR --> SQL
-    PR --> M
-    PR --> BDD
-    PR --> A
-    PR --> REP
+    R -->|實際操作| M
+    M --> BDD
 
     style R fill:#fd9,stroke:#a60
     style P3 fill:#9cf,stroke:#069,stroke-width:3px
-    style P2 fill:#cef
-    style PR fill:#cfc
     style P4 fill:#9f9,stroke:#060,stroke-width:3px
 ```
 
@@ -155,15 +136,11 @@ graph LR
 |------|---------|------|
 | **計畫書** | | |
 | **[`Pre-SIT_Work_Plan_v2.2.md`](Pre-SIT_Work_Plan_v2.2.md)** ⭐ | 最新架構規格：雙環境、自行 build PetClinic、PostgreSQL + Flyway | PM、架構師、新成員 |
-| [`Pre-SIT_Work_Plan_v2.1.md`](Pre-SIT_Work_Plan_v2.1.md) | v2.1 PoC 版（plan-faithful），已驗證 100% GO | 了解 v2.1 → v2.2 架構轉向 |
-| [`Pre-SIT_Work_Plan_v2.md`](Pre-SIT_Work_Plan_v2.md) | v2.0 原始提案版 | 追溯設計決策根源 |
 | **操作指南** | | |
 | **`README.md`（本檔）** ⭐ | 全貌導覽；§3–§6 設計原理；§7.1–§7.12 環境建置、CI/CD、Observability 等 | 所有角色 |
 | **[`Pre-SIT_Gherkin_to_Script_Guide.md`](Pre-SIT_Gherkin_to_Script_Guide.md)** | Gherkin ↔ Java step 對應原理、手動契約說明、各 Phase 範例 | Developer、QA |
-| [`presit-bdd-demo/docs/guide.md`](presit-bdd-demo/docs/guide.md) | v2.0 demo 操作手冊 | 對照舊版本 |
 | **PoC 驗證** | | |
-| **[`presit-bdd-demo/poc/POC_RESULTS.md`](presit-bdd-demo/poc/POC_RESULTS.md)** | v2.1 實跑成績、踩雷紀錄、修正建議 | 想確認可行性 |
-| [`presit-bdd-demo/poc/`](presit-bdd-demo/poc/) | v2.1 可執行程式碼（BDD、K8s YAML、ArgoCD） | 動手跑或修改 |
+| **[`presit-bdd-demo/poc-v2.2/`](presit-bdd-demo/poc-v2.2/)** ⭐ | v2.2 可執行 BDD 專案（三 schema、Flyway、REST API 驗證） | 動手跑或修改 |
 
 ### 2.1 依情境快速導向
 
@@ -171,10 +148,8 @@ graph LR
 |------|---------|
 | 第一次接觸，快速了解全貌 | **README.md**（本檔） |
 | 新組織導入、寫提案或報告 | **[v2.2](Pre-SIT_Work_Plan_v2.2.md)**（雙環境、完整 CI/CD） |
-| 已有 v2.1 PoC，找升級路徑 | **v2.2 §10**「v2.1 → v2.2 變更對照」 |
 | 了解 CI/CD、Observability 等功能 | **README.md §7.5–§7.12** |
-| 最少資源快速跑通 demo | **v2.1** + [`presit-bdd-demo/poc/`](presit-bdd-demo/poc/) |
-| 學術 / 教學 / 了解設計演進 | v2.0 → v2.1 → v2.2 → v2.3（README §7） |
+| 快速跑通 BDD demo | [`presit-bdd-demo/poc-v2.2/`](presit-bdd-demo/poc-v2.2/)（§7.2 Quick Start） |
 
 ---
 
@@ -857,11 +832,11 @@ REPORT_DIR=$(pwd)/reports \
 mvn test -P phase-1   # 或 phase-2 / phase-3 / phase-4
 ```
 
-### 7.5 Stage C：Argo Workflows CI/CD 自動化（在 Kind 內）
+### 7.5 Argo Workflows CI/CD 自動化（在 Kind 內）
 
 Argo Workflows 作為 Pre-SIT 的 CI/CD Orchestrator，部署在同一個 Kind 叢集，透過 `WorkflowTemplate` 定義 7 個步驟的 Pipeline，以 in-cluster kubectl 操作 pre-sit / sit namespace。
 
-完整架構說明與實跑結果見 [§7.11](#711-argo-workflows-pipeline-orchestrator)。
+完整架構說明與實跑結果見 [§7.11](#711-argo-workflows取代-jenkins)。
 
 #### 前提：v2.2 雙環境已就緒
 
@@ -1723,10 +1698,13 @@ pre-site-tutorial/
             └── phase-{1,2,3,4}/cucumber-report.{html,json,xml}
 ```
 
-### 8.1 為什麼分 v2.0 demo 與 v2.1 PoC？
+### 8.1 presit-bdd-demo/ 目錄說明
 
-- **v2.0 demo**（`presit-bdd-demo/{features,step-definitions,runners,...}/`）保留作為「原始計畫書的初稿」，方便對照 v2.1 校準了哪些東西
-- **v2.1 PoC**（`presit-bdd-demo/poc/`）是可實際跑出 ✅ GO 的完整版本，bug 已修、缺漏已補
+| 目錄 | 說明 |
+|------|------|
+| `presit-bdd-demo/poc-v2.2/` | ⭐ v2.2 現行 BDD 專案（三 schema、Flyway、REST API 驗證），可執行 |
+| `presit-bdd-demo/poc/` | v2.1 歷史版本（單 schema），供歷史對照 |
+| `presit-bdd-demo/{features,step-definitions,...}/` | v2.0 原始 demo（含已知 bugs），僅供對比 |
 
 ---
 
@@ -1769,7 +1747,7 @@ mvn test -Dcucumber.filter.tags="@critical and not @known-issue"
 | 不要 Eureka，改用 K8s Service Discovery | 重 build api-gateway 改用 Spring Cloud Kubernetes |
 | 真正用 Postgres 而非 HSQLDB（**已實作**）| `petclinic-src/` 自行 build；`presit`/`sit` profile 均連線 PostgreSQL，無 HSQLDB |
 | ArgoCD 接真正的 Git | `argocd/petclinic-pre-sit.yaml` 改 `repoURL` |
-| CI/CD 整合（已實作 v2.3） | Argo Workflows 部署在 Kind 內；`manifests/argo-workflows/` + `WorkflowTemplate` 已就緒，見 [§7.5](#75-stage-cargo-workflows-cicd-自動化在-kind-內) |
+| CI/CD 整合（已實作 v2.3） | Argo Workflows 部署在 Kind 內；`manifests/argo-workflows/` + `WorkflowTemplate` 已就緒，見 [§7.5](#75-argo-workflows-cicd-自動化在-kind-內) |
 | 觀測性（已實作 v2.3） | Prometheus + Grafana + Loki 已部署；`manifests/monitoring/` + `scripts/setup-monitoring.sh`，見 [§7.6](#76-observabilityprometheus--grafana--loki) |
 | 明文密碼消除（已實作 v2.3） | Sealed Secrets controller 替換明文 Secret；`manifests/sealed-secrets/` + `06-sealed-db-credentials.yaml`，見 [§7.7](#77-sealed-secrets消除-git-明文密碼) |
 | 多人共用 SIT 資料互污（已實作 v2.3） | 一行指令建立隔離 namespace；`scripts/create-sit-user.sh <username>`，見 [§7.8](#78-per-user-sit-namespace每位測試人員獨立沙盒) |
