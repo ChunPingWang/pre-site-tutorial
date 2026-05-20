@@ -1199,7 +1199,7 @@ manifests/
 
 ### 7.9 完整環境 Quick Start
 
-v2.1/v2.2 的 §7.2「五個指令」只建立 Pre-SIT PoC。本節提供 **v2.3 全棧 Quick Start**：從 Kind 空叢集到 Jenkins + Observability + Sealed Secrets + Per-user SIT 全部就緒，一個腳本搞定。
+本節提供**全棧 Quick Start**：從 Kind 空叢集到 Observability + Sealed Secrets + Per-user SIT 全部就緒，一個腳本搞定。
 
 #### 一鍵全棧安裝
 
@@ -1748,10 +1748,8 @@ bdd-runner:                          dind:
 pre-site-tutorial/
 ├── README.md                              ⭐ 本檔（教學入口）
 ├── Jenkinsfile                            v2.3 Jenkins pipeline（保留於 jenkins 分支）
-├── Pre-SIT_Work_Plan_v2.md                v2.0 原始工作計畫書
-├── Pre-SIT_Work_Plan_v2.1.md              ⭐ v2.1 校準後工作計畫書
+├── Pre-SIT_Work_Plan_v2.2.md              ⭐ 現行架構規格書
 ├── Pre-SIT_Gherkin_to_Script_Guide.md     Gherkin → Java 對應教學
-├── presit-bdd-demo.tar.gz                 v2.0 原始 demo tar 包
 │
 ├── manifests/
 │   ├── argocd/
@@ -1810,40 +1808,9 @@ pre-site-tutorial/
 │   ├── restore-db.sh                      ⭐ Postgres pg_restore 還原
 │   └── setup-argo-workflows.sh            ⭐ Argo Workflows 一鍵安裝
 │
-└── presit-bdd-demo/                       v2.0 原始 demo 與 v2.1 PoC
-    ├── features/                          v2.0 demo: Gherkin
-    ├── step-definitions/                  v2.0 demo: Java steps（含已知 bugs，僅供對比）
-    ├── runners/                           v2.0 demo: Runner
-    ├── pom.xml                            v2.0 demo: 非標準 Maven layout
-    ├── k8s/presit-validation-jobs.yaml    v2.0 demo: K8s Jobs
-    ├── scripts/run-presit.sh              v2.0 demo: 本地腳本
-    ├── Dockerfile                         v2.0 demo: BDD runner image
-    ├── docs/guide.md                      v2.0 demo: 操作手冊
-    │
-    └── poc/                               ⭐ v2.1 校準後可實跑完整 PoC
-        ├── POC_RESULTS.md                 PoC 結果（100% GO）
-        ├── kind/
-        │   ├── kind-config.yaml           Kind + containerd mirror
-        │   └── up.sh                      冪等啟動腳本
-        ├── sql/
-        │   ├── 01-schema.sql              7 表 schema（對應 Phase 1 全部斷言）
-        │   └── 02-sample-data.sql         筆數達門檻 + George Franklin
-        ├── manifests/
-        │   ├── 00-namespace.yaml
-        │   ├── 10-postgres.yaml           StatefulSet + Service + initdb mount
-        │   ├── 20-config-server.yaml
-        │   ├── 30-discovery-server.yaml
-        │   ├── 40-microservices.yaml      4 服務（含 JVM 調整 + show-details）
-        │   └── 50-presit-jobs.yaml        4 Phase Jobs + RBAC + PVC + Secret
-        ├── argocd/
-        │   └── petclinic-pre-sit.yaml     ArgoCD Application
-        ├── bdd/                           標準 Maven layout BDD 專案
-        │   ├── pom.xml
-        │   ├── Dockerfile
-        │   └── src/test/{java,resources}/...
-        └── reports/                       PVC 拉出的 cucumber 報告
-            ├── presit-decision.{html,json}
-            └── phase-{1,2,3,4}/cucumber-report.{html,json,xml}
+└── presit-bdd-demo/                       BDD 專案目錄
+    ├── poc-v2.3-tc/                       ⭐ Phase 1 Testcontainers 版本（本分支）
+    └── poc-v2.2/                          v2.2 標準版（三 schema + Flyway + REST API 驗證）
 ```
 
 ### 8.1 presit-bdd-demo/ 目錄說明
@@ -1851,9 +1818,7 @@ pre-site-tutorial/
 | 目錄 | 說明 |
 |------|------|
 | `presit-bdd-demo/poc-v2.3-tc/` | ⭐ Phase 1 Testcontainers BDD 專案（DinD sidecar + Flyway，Kind 已驗證） |
-| `presit-bdd-demo/poc-v2.2/` | v2.2 BDD 專案（三 schema、Flyway、REST API 驗證），供對照 |
-| `presit-bdd-demo/poc/` | v2.1 歷史版本（單 schema），供歷史對照 |
-| `presit-bdd-demo/{features,step-definitions,...}/` | v2.0 原始 demo（含已知 bugs），僅供對比 |
+| `presit-bdd-demo/poc-v2.2/` | v2.2 標準版（三 schema、Flyway、REST API 驗證），供對照 |
 
 ---
 
@@ -1870,11 +1835,11 @@ A：本專案**自行 build** PetClinic 微服務（`petclinic-src/`），以自
 
 ### Q2：Phase 2 記憶體門檻為何從 512 改 768 MB？
 
-A：Spring Boot 3.2 + Spring Cloud Config + Eureka client 啟動穩態約 500–530 MiB，即使設定 `-Xmx200m -XX:MaxMetaspaceSize=160m` 也無法降到 512 以下（Metaspace + Direct Memory + Netty buffers）。v2.0 plan 寫 < 512 MB 在實測中無法達成，v2.1 已改為 768 MB。詳見 [`POC_RESULTS.md §4 F1/F2`](presit-bdd-demo/poc/POC_RESULTS.md)。
+A：Spring Boot 3.2 + Spring Cloud Config + Eureka client 啟動穩態約 500–530 MiB，即使設定 `-Xmx200m -XX:MaxMetaspaceSize=160m` 也無法降到 512 以下（Metaspace + Direct Memory + Netty buffers）。
 
 ### Q3：為何 Phase 3 有一個場景被標 `@known-issue`？
 
-A：upstream PetClinic 對未知 owner 回 `200 + 空 body`（不是 RESTful 的 404）。這是 upstream code 行為，無法用配置調整。v2.1 將該場景標 `@known-issue`，phase-3 Maven profile 設 `not @known-issue` 排除。詳見 [`POC_RESULTS.md §4 F7`](presit-bdd-demo/poc/POC_RESULTS.md)。
+A：upstream PetClinic 對未知 owner 回 `200 + 空 body`（不是 RESTful 的 404）。這是 upstream code 行為，無法用配置調整。本專案將該場景標 `@known-issue`，phase-3 Maven profile 設 `not @known-issue` 排除。
 
 ### Q4：可以只跑 Phase 1 嗎？
 
@@ -1954,17 +1919,6 @@ graph TB
 | But | 但是 | 連接反向條件 |
 
 ⚠️ **不存在的關鍵字**（v2.0 真的踩雷過 → v2.1 已修）：`因為`、`否則`。請改用 `# 註解` 或 `並且`。
-
----
-
-## 附錄 B：本專案的版本軌跡
-
-| 版本 | 狀態 | 通過率 | 決策 |
-|------|------|--------|------|
-| v2.0 plan-faithful baseline | ❌ 7 個 case 失敗 | 86% | NO-GO |
-| v2.1 A 路線修正後 | ✅ 全綠 | 100% | **GO** |
-
-詳見 [`presit-bdd-demo/poc/POC_RESULTS.md`](presit-bdd-demo/poc/POC_RESULTS.md) §1。
 
 ---
 
