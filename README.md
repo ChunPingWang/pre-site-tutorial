@@ -1365,13 +1365,13 @@ curl -s -H 'Host: sit.local' http://localhost:30080/api/customer/owners | jq len
 
 ### 7.11 Argo Workflows：取代 Jenkins
 
-> **Branch 策略**：Jenkins 版本保存在 `v2.3-jenkins` 分支；`main` 分支使用 Argo Workflows。
+> **Branch 策略**：Jenkins 版本保存在 `jenkins` 分支；`main` 分支使用 Argo Workflows。
 
 Argo Workflows 是 Kubernetes-native 的工作流程引擎，以 CRD（`Workflow`, `WorkflowTemplate`）取代 Jenkins Pipeline，所有 CI 步驟直接在 Pod 內執行，無需維護 Jenkins controller。
 
 #### 架構對比
 
-| 面向 | Jenkins（v2.3-jenkins 分支） | Argo Workflows（main 分支） |
+| 面向 | Jenkins（jenkins 分支） | Argo Workflows（main 分支） |
 |------|-----------------------------|-----------------------------|
 | 部署方式 | Deployment + ClusterIP | Helm chart（argo-workflows） |
 | Pipeline 定義 | `Jenkinsfile`（Groovy） | `WorkflowTemplate`（YAML） |
@@ -1599,7 +1599,7 @@ echo "127.0.0.1 presit-editor.local" | sudo tee -a /etc/hosts
 ```
 pre-site-tutorial/
 ├── README.md                              ⭐ 本檔（教學入口）
-├── Jenkinsfile                            v2.3 Jenkins pipeline（保留於 v2.3-jenkins 分支）
+├── Jenkinsfile                            v2.3 Jenkins pipeline（保留於 jenkins 分支）
 ├── Pre-SIT_Work_Plan_v2.md                v2.0 原始工作計畫書
 ├── Pre-SIT_Work_Plan_v2.1.md              ⭐ v2.1 校準後工作計畫書
 ├── Pre-SIT_Gherkin_to_Script_Guide.md     Gherkin → Java 對應教學
@@ -1616,7 +1616,7 @@ pre-site-tutorial/
 │   │   ├── 10-install-values.yaml         Helm values（server 模式，無 TLS）
 │   │   ├── 20-workflow-template.yaml      ⭐ presit-pipeline WorkflowTemplate（6 步）
 │   │   └── 30-ingress.yaml                Ingress: argo.local → argo-server:2746
-│   ├── jenkins/                           Jenkins（保留於 v2.3-jenkins 分支）
+│   ├── jenkins/                           Jenkins（保留於 jenkins 分支）
 │   │   ├── 00-namespace.yaml              Jenkins namespace
 │   │   ├── 05-rbac.yaml                   SA + Role（pre-sit）+ ClusterRole（cross-ns）
 │   │   ├── 10-jenkins.yaml                Jenkins 2.492.3 Deployment + ClusterIP Service
