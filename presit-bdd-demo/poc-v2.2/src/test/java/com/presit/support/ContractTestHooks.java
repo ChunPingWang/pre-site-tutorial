@@ -24,6 +24,12 @@ public class ContractTestHooks {
         }
         synchronized (ContractTestHooks.class) {
             if (!isRunning()) {
+                // TC strategy detection is lazy (fires on container.start()).
+                // Set docker.host before start() so EnvironmentAndSystemPropertyClientProviderStrategy
+                // activates when DOCKER_HOST env var isn't inherited by the Surefire forked JVM.
+                if (System.getenv("DOCKER_HOST") == null && System.getProperty("docker.host") == null) {
+                    System.setProperty("docker.host", "unix:///var/run/docker.sock");
+                }
                 @SuppressWarnings("resource")
                 PostgreSQLContainer<?> c = new PostgreSQLContainer<>("postgres:15-alpine")
                         .withDatabaseName("petclinic")
