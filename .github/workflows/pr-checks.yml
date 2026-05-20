@@ -1,0 +1,38 @@
+name: PR Checks
+
+on:
+  pull_request:
+  push:
+    branches: [main, gcp-deployment, jenkins, testcontainers]
+
+jobs:
+  dry-run:
+    name: Step Binding Check (dry-run)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: maven
+      - name: Cucumber dry-run — validate Phase 1 step bindings (no DB needed)
+        run: |
+          mvn -f presit-bdd-demo/poc-v2.2/pom.xml test \
+            -Dtest=PreSitTestRunner \
+            -Dcucumber.filter.tags="@phase-1" \
+            -Dcucumber.execution.dry-run=true \
+            -B --no-transfer-progress
+
+  phase1-contract:
+    name: Phase 1 Contract Test (Testcontainers)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: maven
+      - name: Phase 1 BDD contract test — Postgres via Testcontainers
+        run: mvn -f presit-bdd-demo/poc-v2.2/pom.xml test -Pphase-1-contract -B --no-transfer-progress
