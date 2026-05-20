@@ -1,0 +1,94 @@
+// PR level pre-check pipeline
+//
+// 用途：push / merge 前驗證 Phase 1 step bindings 完整性與 DB schema contract
+//   Stage 1 - Step Binding Check：Cucumber dry-run，無需 DB，秒級完成
+//   Stage 2 - Phase 1 Contract Test：Testcontainers 自啟 Postgres，跑完整 Phase 1 BDD
+//
+// 前提：Jenkins 已安裝 Kubernetes plugin，且 Kind node 允許 privileged pod
+//   kubectl label namespace <jenkins-ns> pod-security.kubernetes.io/enforce=privileged
+//
+// 觸發：在 Jenkins 建立 Pipeline Job，SCM 指向本 repo，Jenkinsfile path 設為
+//   Jenkinsfile.pr-check，即可對任意分支手動或 SCM polling 觸發。
+
+pipeline {
+    agent {
+        kubernetes {
+            yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: maven
+    image: maven:3.9-eclipse-temurin-17
+    command: [sleep, infinity]
+    env:
+    - name: DOCKER_HOST
+      value: unix:///docker-var-run/docker.sock
+    volumeMounts:
+    - name: docker-sock
+      mountPath: /docker-var-run
+  - name: dind
+    image: docker:27-dind
+    command:
+    - sh
+    - -c
+    - |
+      dockerd-entrypoint.sh \
+        --host unix:///docker-var-run/docker.sock &
+      echo "[dind] dockerd 啟動中..."
+      wait
+    securityContext:
+      privileged: true
+    env:
+    - name: DOCKER_TLS_CERTDIR
+      value: ""
+    volumeMounts:
+    - name: docker-sock
+      mountPath: /docker-var-run
+  volumes:
+  - name: docker-sock
+    emptyDir: {}
+'''
+        }
+    }
+
+    options {
+        timestamps()
+        ansiColor('xterm')
+        timeout(time: 15, unit: 'MINUTES')
+    }
+
+    stages {
+        stage('Step Binding Check') {
+            steps {
+                container('maven') {
+                    sh '''
+                      mvn -f presit-bdd-demo/poc-v2.2/pom.xml test \
+                        -Dtest=PreSitTestRunner \
+                        -Dcucumber.filter.tags="@phase-1" \
+                        -Dcucumber.execution.dry-run=true \
+                        -B --no-transfer-progress
+                    '''
+                }
+            }
+        }
+
+        stage('Phase 1 Contract Test') {
+            steps {
+                container('maven') {
+                    sh '''
+                      until docker version >/dev/null 2>&1; do sleep 2; done
+                      echo "[pr-check] Docker daemon 就緒"
+                      mvn -f presit-bdd-demo/poc-v2.2/pom.xml test \
+                        -Pphase-1-contract -B --no-transfer-progress
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success { echo '✅ PR check 通過，可安全 push / merge' }
+        failure { echo '❌ PR check 失敗，請修正後再 push' }
+    }
+}
