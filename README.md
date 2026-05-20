@@ -888,10 +888,126 @@ kubectl exec -n jenkins deploy/jenkins -- \
 
 > **Promote 機制**：`Deploy SIT` 從 pre-sit 讀取剛通過測試的 image（`kubectl get deployment … -o jsonpath=…`），以 `kubectl set image` 直接寫入 SIT，無需 docker retag 或 Argo Image Updater。
 
-#### 已知限制（v2.4 backlog）
+#### 限制與適用情境
 
-- Jenkins 無法收到 GitHub webhook（Kind 不對外）→ 手動觸發或 polling SCM
-- Image build（mvn package + docker build/push）留給 v2.4 用 kaniko 或 DinD sidecar
+**CD 的固有限制**
+
+| 限制 | 說明 |
+|------|------|
+| Push-once，無 reconciliation | ArgoCD 持續監控 K8s 狀態並自動修正 drift；Jenkins 只在 pipeline 執行當下推一次，事後有人手動改了 deployment，不會被發現或還原 |
+| Promote 綁死「pre-sit 現行 image」 | 若 image tag 是固定值（如 `:v2.2`），每次 promote 的都是同一個 image，SIT rolling update 不觸發。需搭配 image build（v2.4）才能真正追蹤版本 |
+| 無法收 GitHub webhook | Kind 叢集不對外，只能手動觸發或 SCM polling，CI 即時性打折扣 |
+| Per-user SIT 尚未 Jenkins 化 | `create-sit-user.sh --gitops` 模式仍依賴 ArgoCD ApplicationSet；若完全移除 ArgoCD，只能用 `--direct` 模式（無 drift detection） |
+
+**適用情境**
+
+| 情境 | 建議 |
+|------|------|
+| ✅ 企業已有 Jenkins 基礎建設，換 Argo 成本高 | 以本分支為起點，漸進補足功能 |
+| ✅ 環境數量少且穩定（pre-sit / sit 兩個環境） | Jenkins 管理足夠 |
+| ✅ 手動觸發為主，不需要 commit-triggered 全自動 CD | Jenkins polling 可接受 |
+| ✅ 教學 / PoC | 學員在熟悉的 Jenkins 概念下理解 BDD pipeline |
+| ❌ 需要 drift detection / self-healing | 改用 `main`（Argo Workflows + ArgoCD） |
+| ❌ 多環境大規模（如大量 per-user namespace） | ArgoCD ApplicationSet 更合適 |
+| ❌ 高頻 commit-triggered CD | ArgoCD webhook 更即時 |
+
+#### Image Build：三種方案（v2.4 路線圖）
+
+Jenkins 跑在 Kind K8s Pod 內，Pod 的宿主是 Kind node（用 containerd 當 CRI，無 Docker daemon），因此 image build 需要額外機制。
+
+**Option A：DinD sidecar（教學 / PoC 推薦）**
+
+和 `testcontainers` 分支 Phase 1 的 DinD 解法相同模式。在 Jenkins Deployment 加 `docker:dind` sidecar，共享 `/var/run` emptyDir。
+
+```yaml
+# manifests/jenkins/10-jenkins.yaml — containers 區段新增：
+- name: dind
+  image: docker:27-dind
+  securityContext: { privileged: true }
+  env:
+  - { name: DOCKER_TLS_CERTDIR, value: "" }
+  volumeMounts:
+  - { name: docker-sock, mountPath: /var/run }
+
+# jenkins 主容器加入 env：
+- { name: DOCKER_HOST, value: "unix:///var/run/docker.sock" }
+
+volumes:
+- name: docker-sock
+  emptyDir: {}
+```
+
+Jenkinsfile 在 `Deploy Pre-SIT` 之前加入 Build & Push stage：
+
+```groovy
+stage('Build & Push') {
+    steps {
+        sh '''
+          SHA=$(git rev-parse --short HEAD)
+          for svc in customers-service vets-service visits-service api-gateway; do
+            docker build \
+              -t localhost:5000/petclinic-${svc}:sha-${SHA} \
+              petclinic-src/spring-petclinic-${svc}/
+            docker push localhost:5000/petclinic-${svc}:sha-${SHA}
+          done
+        '''
+    }
+}
+```
+
+> 優點：概念簡單，和 TC Phase 1 模式一致，學員已見過。缺點：`privileged: true` 有安全風險，僅適合本機 / PoC。
+
+**Option B：Kaniko K8s Job（Enterprise 推薦）**
+
+Kaniko 不需要 Docker daemon，在 user-space 讀 Dockerfile 並直接 push 到 registry。Jenkins 觸發 Kaniko pod 並等待完成。
+
+```groovy
+stage('Build & Push') {
+    steps {
+        script {
+            def sha = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+            ['customers-service','vets-service','visits-service','api-gateway'].each { svc ->
+                sh """
+                  ${KUBECTL} run kaniko-${svc}-${sha} \
+                    --image=gcr.io/kaniko-project/executor:latest \
+                    --restart=Never --rm --attach \
+                    -- \
+                    --context=dir:///workspace/petclinic-src/spring-petclinic-${svc} \
+                    --destination=localhost:5000/petclinic-${svc}:sha-${sha} \
+                    --insecure
+                """
+            }
+        }
+    }
+}
+```
+
+> 優點：無 `privileged`，可用在任何 K8s 叢集。缺點：build context 需掛 PVC 或 git clone initContainer，設定較複雜。
+
+**Option C：Kind extraMounts 掛 Host Docker socket（最省事）**
+
+Kind node 啟動時掛入 host 的 `/var/run/docker.sock`，Jenkins pod 以 hostPath 存取真正的 Docker daemon。
+
+```yaml
+# presit-bdd-demo/poc/kind/kind-config.yaml — nodes 區段加入：
+nodes:
+- role: control-plane
+  extraMounts:
+  - hostPath: /var/run/docker.sock
+    containerPath: /var/run/docker.sock
+```
+
+Jenkins manifest 加入 hostPath volume，Jenkins 容器就能直接執行 `docker build`。
+
+> 優點：改動最少，build 的 image 直接在 host Docker cache。缺點：只在本機 dev 有效；所有 pod 共用 host daemon，有安全隱患。
+
+**選擇建議**
+
+| 情境 | 選擇 |
+|------|------|
+| 教學 / PoC / 本機驗證 | **Option A**（DinD sidecar，改動最小，概念和 `testcontainers` 分支一致） |
+| 實際企業 CI/CD | **Option B**（Kaniko，無需 `privileged`） |
+| 個人開發機，不在乎安全 | **Option C**（extraMounts，最省事） |
 
 ### 7.6 Observability：Prometheus + Grafana + Loki
 
