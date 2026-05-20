@@ -1484,7 +1484,7 @@ curl -s -H 'Host: sit.local' http://localhost:30080/api/customer/owners | jq len
 
 ### 7.11 Jenkins vs Argo Workflows：架構對比
 
-> **Branch 策略**：本分支（`v2.3-jenkins`）使用 Jenkins 作為 CI/CD orchestrator；`main` 分支改用 Argo Workflows。兩者達到相同的 pipeline 目標，架構設計不同。
+> **Branch 策略**：本分支（`jenkins`）使用 Jenkins 作為 CI/CD orchestrator；`main` 分支改用 Argo Workflows。兩者達到相同的 pipeline 目標，架構設計不同。
 
 #### 架構對比
 
