@@ -22,18 +22,20 @@ public class DatabaseLayerSteps {
     private final List<Map<String, String>> lastRows = new ArrayList<>();
     private int lastInsertedId = -1;
 
-    private final String dbHost     = System.getenv().getOrDefault("DB_HOST",     "localhost");
-    private final String dbPort     = System.getenv().getOrDefault("DB_PORT",     "5432");
-    private final String dbName     = System.getenv().getOrDefault("DB_NAME",     "petclinic");
-    private final String dbUser     = System.getenv().getOrDefault("DB_USER",     "petclinic");
-    private final String dbPassword = System.getenv().getOrDefault("DB_PASSWORD", "petclinic");
-
     @Before("@database")
     public void setupConnection() throws SQLException {
-        String url = String.format("jdbc:postgresql://%s:%s/%s", dbHost, dbPort, dbName);
-        connection = DriverManager.getConnection(url, dbUser, dbPassword);
+        String url = String.format("jdbc:postgresql://%s:%s/%s",
+                cfg("DB_HOST", "localhost"), cfg("DB_PORT", "5432"), cfg("DB_NAME", "petclinic"));
+        connection = DriverManager.getConnection(url, cfg("DB_USER", "petclinic"), cfg("DB_PASSWORD", "petclinic"));
         connection.setAutoCommit(true);
         System.out.printf("[Pre-SIT] DB 連線成功: %s%n", url);
+    }
+
+    private static String cfg(String key, String def) {
+        String v = System.getProperty(key.toLowerCase().replace('_', '.'));
+        if (v != null) return v;
+        v = System.getenv(key);
+        return v != null ? v : def;
     }
 
     @After("@database")
