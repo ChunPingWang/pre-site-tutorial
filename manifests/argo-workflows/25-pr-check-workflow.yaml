@@ -1,0 +1,128 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: pr-check
+  namespace: argo
+  labels:
+    app: pr-check
+spec:
+  serviceAccountName: argo-presit-runner
+  entrypoint: pr-check
+  # 15 分鐘 timeout（含 git clone + Maven download + TC 啟動）
+  activeDeadlineSeconds: 900
+
+  arguments:
+    parameters:
+    - name: git-repo
+      value: https://github.com/ChunPingWang/pre-site-tutorial.git
+    - name: git-revision
+      value: main
+
+  # workspace：存放 git clone 的原始碼，跨 step 共享
+  volumeClaimTemplates:
+  - metadata:
+      name: workspace
+    spec:
+      accessModes: [ReadWriteOnce]
+      resources:
+        requests:
+          storage: 500Mi
+
+  volumes:
+  # docker-sock：DinD sidecar 與 bdd-runner 共享 docker.sock + presit-done 信號
+  # 掛於 /docker-var-run 而非 /var/run，避免蓋掉 Argo emissary executor 的 socket
+  - name: docker-sock
+    emptyDir: {}
+
+  templates:
+
+  # ── 主流程：三步驟依序執行 ─────────────────────────────────────────────────
+  - name: pr-check
+    steps:
+    - - name: clone
+        template: git-clone
+    - - name: dry-run
+        template: maven-dry-run
+    - - name: phase1-contract
+        template: phase1-contract-tc
+
+  # ── Step 1: git clone ────────────────────────────────────────────────────
+  - name: git-clone
+    script:
+      image: alpine/git:2.43.0
+      command: [sh]
+      source: |
+        git clone --depth=1 \
+          -b {{workflow.parameters.git-revision}} \
+          {{workflow.parameters.git-repo}} \
+          /workspace
+        echo "✅ clone 完成：$(ls /workspace | head -5 | tr '\n' ' ')..."
+      volumeMounts:
+      - name: workspace
+        mountPath: /workspace
+
+  # ── Step 2: dry-run（無需 DB；驗證 Phase 1 step bindings 完整性）────────
+  - name: maven-dry-run
+    script:
+      image: maven:3.9-eclipse-temurin-17
+      command: [sh]
+      source: |
+        mvn -f /workspace/presit-bdd-demo/poc-v2.2/pom.xml test \
+          -Dtest=PreSitTestRunner \
+          -Dcucumber.filter.tags="@phase-1" \
+          -Dcucumber.execution.dry-run=true \
+          -B --no-transfer-progress
+      volumeMounts:
+      - name: workspace
+        mountPath: /workspace
+
+  # ── Step 3: Phase 1 contract test（DinD sidecar + Testcontainers）───────
+  # 注意：需要 privileged DinD sidecar，確保 argo namespace 允許 privileged pod
+  - name: phase1-contract-tc
+    sidecars:
+    - name: dind
+      image: docker:27-dind
+      command: [sh, -c]
+      args:
+        - |
+          dockerd-entrypoint.sh \
+            --host unix:///docker-var-run/docker.sock &
+          DIND_PID=$!
+          echo "[dind] dockerd 啟動中..."
+          until [ -S /docker-var-run/docker.sock ]; do sleep 1; done
+          echo "[dind] dockerd 就緒 (pid=$DIND_PID)"
+          until [ -f /docker-var-run/presit-done ]; do sleep 3; done
+          echo "[dind] presit-done 偵測，關閉 dockerd"
+          kill $DIND_PID && wait $DIND_PID 2>/dev/null || true
+      securityContext:
+        privileged: true
+      env:
+      - name: DOCKER_TLS_CERTDIR
+        value: ""
+      volumeMounts:
+      - name: docker-sock
+        mountPath: /docker-var-run
+    script:
+      image: maven:3.9-eclipse-temurin-17
+      command: [sh]
+      source: |
+        echo "等待 Docker daemon（DinD sidecar）就緒..."
+        until [ -S /docker-var-run/docker.sock ]; do sleep 2; done
+        until DOCKER_HOST=unix:///docker-var-run/docker.sock \
+              docker version >/dev/null 2>&1; do sleep 2; done
+        echo "[pr-check] Docker daemon 就緒，啟動 Phase 1 contract test"
+
+        mvn -f /workspace/presit-bdd-demo/poc-v2.2/pom.xml test \
+          -Pphase-1-contract -B --no-transfer-progress
+        RC=$?
+
+        touch /docker-var-run/presit-done   # 通知 DinD sidecar 關閉
+        exit $RC
+      env:
+      - name: DOCKER_HOST
+        value: unix:///docker-var-run/docker.sock
+      volumeMounts:
+      - name: workspace
+        mountPath: /workspace
+      - name: docker-sock
+        mountPath: /docker-var-run
